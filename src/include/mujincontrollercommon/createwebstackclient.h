@@ -9,7 +9,7 @@
 namespace mujincontrollercommon {
 
 /// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
-static bool IsHostnameLocal(const char* hostname, std::ssize_t len = -1)
+static bool IsHostnameLocal(const char* hostname, ssize_t len = -1)
 {
     if (len == -1) {
         len = std::strlen(hostname);
@@ -52,7 +52,7 @@ static inline mujinclient::ControllerClientPtr CreateWebstackClient(
         start += sizeof("://") - 1;
         const std::size_t port = url.find(":", start); // not found is ok
         const std::size_t slash = url.find("/", start); // not found is ok
-        std::ssize_t len = -1;
+        ssize_t len = -1;
 
         if (slash == std::string::npos) {
             if (port == std::string::npos) {
