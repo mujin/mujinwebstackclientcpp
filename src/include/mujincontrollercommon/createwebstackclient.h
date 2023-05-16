@@ -8,15 +8,33 @@
 
 namespace mujincontrollercommon {
 
-static bool IsHostnameLocal(const std::string& hostname)
+/// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
+static bool IsHostnameLocal(const char* hostname, std::ssize_t len = -1)
 {
-    static char hostnamebuf[256];
-    static int status = gethostname(hostnamebuf, sizeof(hostnamebuf));
-
-    return hostname == "localhost" || hostname == "127.0.0.1" || hostname == hostnamebuf;
+    if (len == -1) {
+        len = std::strlen(hostname);
+    }
+    if (len == sizeof("127.0.0.1") - 1 && strncmp(hostname, "127.0.0.1", len) == 0) {
+        return true;
+    }
+    if (len == sizeof("localhost") - 1 && strncmp(hostname, "localhost", len) == 0) {
+        return true;
+    }
+    char localHostname[HOST_NAME_MAX + 1] = {};
+    if (gethostname(localHostname, sizeof(localHostname)) != 0) {
+        return false;
+    }
+    // If the null-terminated hostname is too large to fit, then the name is truncated, and no error is returned (but see NOTES below).
+    // POSIX.1 says that if such truncation occurs, then it is unspecified whether the returned buffer includes a terminating null byte.
+    localHostname[HOST_NAME_MAX] = '\0';
+    const std::size_t localHostnameLen = std::strlen(localHostname);
+    if (len == localHostnameLen && strncmp(hostname, localHostname, len) == 0) {
+        return true;
+    }
+    return false;
 }
 
-// \brief Transparently diverge to private webstack if url is localhost
+/// \brief Transparently diverge to private webstack if url is localhost
 static inline mujinclient::ControllerClientPtr CreateWebstackClient(
     std::string usernamepassword,
     const std::string& url,
@@ -31,26 +49,38 @@ static inline mujinclient::ControllerClientPtr CreateWebstackClient(
         if (start == std::string::npos) {
             break;
         }
-        start += std::strlen("://");
+        start += sizeof("://") - 1;
+        const std::size_t port = url.find(":", start); // not found is ok
+        const std::size_t slash = url.find("/", start); // not found is ok
+        std::ssize_t len = -1;
 
-        const std::size_t end = url.find("/", start); // not find is ok
-
-        std::string host = url.substr(start, end == std::string::npos ? end : end - start);
-        const std::size_t port = host.find(":");
-        if (port != std::string::npos) {
-            if (host.substr(port + 1) != "80") {
-                break;
+        if (slash == std::string::npos) {
+            if (port == std::string::npos) {
+                // no port, no slash
+                len = -1; // use the null-terminator
+            } else {
+                // has port, no slash
+                len = port - start - 1;
             }
-            host.erase(port);
+        } else {
+            if (port != std::string::npos && port < slash) {
+                // has port before slash
+                len = port - start - 1;
+            } else {
+                // no port, but has slash
+                len = slash - start - 1;
+            }
         }
 
-        if (IsHostnameLocal(host)) {
-            unixendpoint = "/run/webstack/http.sock";
-
-            const char *const username = std::getenv("MUJIN_WEBSTACK_PRIVATE_USERNAME");
-            const char *const password = std::getenv("MUJIN_WEBSTACK_PRIVATE_PASSWORD");
-            if (username != nullptr && password != nullptr) {
-                usernamepassword = std::string(username) + ":" + password;
+        if (IsHostnameLocal(url.c_str() + start, len)) {
+            const char *const envunixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
+            if (envunixendpoint != nullptr && envunixendpoint[0] != '\0') {
+                unixendpoint = envunixendpoint;
+                const char *const username = std::getenv("MUJIN_WEBSTACK_LEGACY_USERNAME");
+                const char *const password = std::getenv("MUJIN_WEBSTACK_PRIVATE_PASSWORD");
+                if (username != nullptr && password != nullptr) {
+                    usernamepassword = std::string(username) + ":" + password;
+                }
             }
         }
         break;
