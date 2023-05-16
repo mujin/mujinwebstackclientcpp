@@ -54,15 +54,15 @@ mujinclient::ControllerClientPtr CreateWebstackClient(
                     len = -1; // use the null-terminator
                 } else {
                     // has port, no slash
-                    len = port - start - 1;
+                    len = port - start;
                 }
             } else {
                 if (port != std::string::npos && port < slash) {
                     // has port before slash
-                    len = port - start - 1;
+                    len = port - start;
                 } else {
                     // no port, but has slash
-                    len = slash - start - 1;
+                    len = slash - start;
                 }
             }
             if (IsHostnameLocal(url.c_str() + start, len)) {
