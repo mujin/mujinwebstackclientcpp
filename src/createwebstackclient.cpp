@@ -31,6 +31,44 @@ bool IsHostnameLocal(const char* hostname, ssize_t len)
     return false;
 }
 
+/// \brief determine the unix endpoint if webstack is local
+const char* GetUnixEndpointForLocalWebstack(const char* url)
+{
+    const char* colonSlashSlash = strstr(url, "://");
+    if (colonSlashSlash == nullptr) {
+        return "";
+    }
+    const char* hostname = colonSlashSlash + sizeof("://") - 1;
+    const char* port = strstr(hostname, ":"); // not found is ok
+    const char* slash = strstr(hostname, "/"); // not found is ok
+    ssize_t len = -1;
+    if (slash == nullptr) {
+        if (port == nullptr) {
+            // no port, no slash
+            len = -1; // use the null-terminator
+        } else {
+            // has port, no slash
+            len = port - hostname;
+        }
+    } else {
+        if (port != nullptr && port < slash) {
+            // has port before slash
+            len = port - hostname;
+        } else {
+            // no port, but has slash
+            len = slash - hostname;
+        }
+    }
+    if (IsHostnameLocal(hostname, len)) {
+        const char* unixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
+        if (unixendpoint != nullptr && unixendpoint[0] != '\0') {
+            MUJIN_LOG_DEBUG_FORMAT("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"", unixendpoint%url);
+            return unixendpoint;
+        }
+    }
+    return "";
+}
+
 /// \brief Transparently diverge to private webstack if url is localhost
 mujinclient::ControllerClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
@@ -42,37 +80,7 @@ mujinclient::ControllerClientPtr CreateWebstackClient(
     std::string unixendpoint)
 {
     if (unixendpoint.empty()) {
-        const size_t colonSlashSlash = url.find("://");
-        if (colonSlashSlash != std::string::npos) {
-            const size_t start = colonSlashSlash + sizeof("://") - 1;
-            const size_t port = url.find(":", start); // not found is ok
-            const size_t slash = url.find("/", start); // not found is ok
-            ssize_t len = -1;
-            if (slash == std::string::npos) {
-                if (port == std::string::npos) {
-                    // no port, no slash
-                    len = -1; // use the null-terminator
-                } else {
-                    // has port, no slash
-                    len = port - start;
-                }
-            } else {
-                if (port != std::string::npos && port < slash) {
-                    // has port before slash
-                    len = port - start;
-                } else {
-                    // no port, but has slash
-                    len = slash - start;
-                }
-            }
-            if (IsHostnameLocal(url.c_str() + start, len)) {
-                const char *const envunixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
-                if (envunixendpoint != nullptr && envunixendpoint[0] != '\0') {
-                    unixendpoint = envunixendpoint;
-                    MUJIN_LOG_DEBUG_FORMAT("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"", unixendpoint%url);
-                }
-            }
-        }
+        unixendpoint = GetUnixEndpointForLocalWebstack(url.c_str());
     }
 
     return mujinclient::CreateControllerClient(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout, unixendpoint);

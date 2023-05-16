@@ -11,10 +11,13 @@
 namespace mujincontrollercommon {
 
 /// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
-bool MUJINCONTROLLERCOMMON_API IsHostnameLocal(const char* hostname, ssize_t len = -1);
+MUJINCONTROLLERCOMMON_API bool IsHostnameLocal(const char* hostname, ssize_t len = -1);
+
+/// \brief determine the unix endpoint if webstack is local
+MUJINCONTROLLERCOMMON_API const char* GetUnixEndpointForLocalWebstack(const char* url);
 
 /// \brief Transparently diverge to private webstack if url is localhost
-mujinclient::ControllerClientPtr MUJINCONTROLLERCOMMON_API CreateWebstackClient(
+MUJINCONTROLLERCOMMON_API mujinclient::ControllerClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
     const std::string& url,
     const std::string& proxyserverport = std::string(),
