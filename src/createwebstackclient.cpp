@@ -69,6 +69,7 @@ mujinclient::ControllerClientPtr CreateWebstackClient(
                 const char *const envunixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
                 if (envunixendpoint != nullptr && envunixendpoint[0] != '\0') {
                     unixendpoint = envunixendpoint;
+                    MUJIN_LOG_DEBUG_FORMAT("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"", unixendpoint%url);
                 }
             }
         }
