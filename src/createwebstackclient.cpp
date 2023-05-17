@@ -39,8 +39,12 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
         return "";
     }
     const char* hostname = colonSlashSlash + sizeof("://") - 1;
-    const char* port = strstr(hostname, ":"); // not found is ok
+    const char* at = strstr(hostname, "@"); // not found is ok
     const char* slash = strstr(hostname, "/"); // not found is ok
+    if (at != nullptr && (slash == nullptr || at < slash)) {
+        hostname = at + 1;
+    }
+    const char* port = strstr(hostname, ":"); // not found is ok
     ssize_t len = -1;
     if (slash == nullptr) {
         if (port == nullptr) {
@@ -48,11 +52,17 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
             len = -1; // use the null-terminator
         } else {
             // has port, no slash
+            if (strcmp(port, ":80") != 0) {
+                return "";
+            }
             len = port - hostname;
         }
     } else {
         if (port != nullptr && port < slash) {
             // has port before slash
+            if (strncmp(port, ":80", slash - port) != 0) {
+                return "";
+            }
             len = port - hostname;
         } else {
             // no port, but has slash
