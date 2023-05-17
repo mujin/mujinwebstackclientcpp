@@ -31,12 +31,12 @@ bool IsHostnameLocal(const char* hostname, ssize_t len)
     return false;
 }
 
-/// \brief determine the unix endpoint if webstack is local
-const char* GetUnixEndpointForLocalWebstack(const char* url)
+/// \brief determine if the url is pointing to local webstack
+bool IsWebstackLocal(const char* url)
 {
     const char* colonSlashSlash = strstr(url, "://");
     if (colonSlashSlash == nullptr) {
-        return "";
+        return false;
     }
     const char* hostname = colonSlashSlash + sizeof("://") - 1;
     const char* at = strstr(hostname, "@"); // not found is ok
@@ -53,7 +53,7 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
         } else {
             // has port, no slash
             if (strcmp(port, ":80") != 0) {
-                return "";
+                return false;
             }
             len = port - hostname;
         }
@@ -61,7 +61,7 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
         if (port != nullptr && port < slash) {
             // has port before slash
             if (strncmp(port, ":80", slash - port) != 0) {
-                return "";
+                return false;
             }
             len = port - hostname;
         } else {
@@ -69,7 +69,13 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
             len = slash - hostname;
         }
     }
-    if (IsHostnameLocal(hostname, len)) {
+    return IsHostnameLocal(hostname, len);
+}
+
+/// \brief determine the unix endpoint if webstack is local
+const char* GetUnixEndpointForLocalWebstack(const char* url)
+{
+    if (IsWebstackLocal(url)) {
         const char* unixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
         if (unixendpoint != nullptr && unixendpoint[0] != '\0') {
             MUJIN_LOG_DEBUG_FORMAT("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"", unixendpoint%url);

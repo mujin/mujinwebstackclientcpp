@@ -13,6 +13,9 @@ namespace mujincontrollercommon {
 /// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
 MUJINCONTROLLERCOMMON_API bool IsHostnameLocal(const char* hostname, ssize_t len = -1);
 
+/// \brief determine if the url is pointing to local webstack
+MUJINCONTROLLERCOMMON_API bool IsWebstackLocal(const char* url);
+
 /// \brief determine the unix endpoint if webstack is local
 MUJINCONTROLLERCOMMON_API const char* GetUnixEndpointForLocalWebstack(const char* url);
 
