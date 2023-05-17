@@ -26,8 +26,7 @@ MUJINCONTROLLERCOMMON_API mujinclient::ControllerClientPtr CreateWebstackClient(
     const std::string& proxyserverport = std::string(),
     const std::string& proxyuserpw = std::string(),
     int options = 0,
-    double timeout = 3.0,
-    std::string unixendpoint = std::string());
+    double timeout = 3.0);
 
 } // namespace mujincontrollercommon
 

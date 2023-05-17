@@ -92,14 +92,14 @@ mujinclient::ControllerClientPtr CreateWebstackClient(
     const std::string& proxyserverport,
     const std::string& proxyuserpw,
     int options,
-    double timeout,
-    std::string unixendpoint)
+    double timeout)
 {
-    if (unixendpoint.empty()) {
-        unixendpoint = GetUnixEndpointForLocalWebstack(url.c_str());
+    mujinclient::ControllerClientPtr pClient = mujinclient::CreateControllerClient(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout);
+    std::string unixendpoint = GetUnixEndpointForLocalWebstack(url.c_str());
+    if (!unixendpoint.empty()) {
+        pClient->SetUnixEndpoint(unixendpoint);
     }
-
-    return mujinclient::CreateControllerClient(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout, unixendpoint);
+    return pClient;
 }
 
 }
