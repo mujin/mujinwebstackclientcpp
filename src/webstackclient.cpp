@@ -11,20 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "common.h"
-#include "controllerclientimpl.h"
+
+#include <mujinwebstackclientcpp/webstackclient.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <strstream>
 
+#include "common.h"
+#include "logging.h"
+
 #define SKIP_PEER_VERIFICATION // temporary
 //#define SKIP_HOSTNAME_VERIFICATION
 
-#include "logging.h"
-
-MUJIN_LOGGER("mujin.controllerclientcpp");
+MUJIN_LOGGER("mujin.webstackcpp");
 
 #define CURL_OPTION_SAVER(curl, curlopt, curvalue) boost::shared_ptr<void> __curloptionsaver ## curlopt((void*)0, boost::bind(boost::function<CURLcode(CURL*, CURLoption, decltype(curvalue))>(curl_easy_setopt), curl, curlopt, curvalue))
 #define CURL_OPTION_SETTER(curl, curlopt, newvalue) CHECKCURLCODE(curl_easy_setopt(curl, curlopt, newvalue), "curl_easy_setopt " # curlopt)
@@ -91,7 +92,7 @@ std::wstring ParseWincapsWCNPath(const T& sourcefilename, const boost::function<
     return strWCNPath;
 }
 
-ControllerClientImpl::ControllerClientImpl(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
+WebstackClient::WebstackClient(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
 {
     BOOST_ASSERT( !baseuri.empty() );
     size_t usernameindex = 0;
@@ -225,7 +226,7 @@ ControllerClientImpl::ControllerClientImpl(const std::string& usernamepassword, 
     _SetupHTTPHeadersMultipartFormData();
 }
 
-ControllerClientImpl::~ControllerClientImpl()
+WebstackClient::~WebstackClient()
 {
     if( !!_httpheadersjson ) {
         curl_slist_free_all(_httpheadersjson);
@@ -239,26 +240,7 @@ ControllerClientImpl::~ControllerClientImpl()
     curl_easy_cleanup(_curl);
 }
 
-std::string ControllerClientImpl::GetVersion()
-{
-    if (!_profile.IsObject()) {
-        _profile.SetObject();
-        CallGet("profile/", _profile);
-    }
-    return GetJsonValueByKey<std::string>(_profile, "version");
-}
-
-const std::string& ControllerClientImpl::GetUserName() const
-{
-    return _username;
-}
-
-const std::string& ControllerClientImpl::GetBaseURI() const
-{
-    return _baseuri;
-}
-
-void ControllerClientImpl::SetCharacterEncoding(const std::string& newencoding)
+void WebstackClient::SetCharacterEncoding(const std::string& newencoding)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _charset = newencoding;
@@ -268,23 +250,7 @@ void ControllerClientImpl::SetCharacterEncoding(const std::string& newencoding)
     // _SetupHTTPHeadersMultipartFormData();
 }
 
-void ControllerClientImpl::SetProxy(const std::string& serverport, const std::string& userpw)
-{
-    // mutally exclusive with unix endpoint settings
-    CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, NULL);
-    CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, serverport.c_str());
-    CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, userpw.c_str());
-}
-
-void ControllerClientImpl::SetUnixEndpoint(const std::string& unixendpoint)
-{
-    // mutually exclusive with proxy settings
-    CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, NULL);
-    CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, NULL);
-    CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, unixendpoint.c_str());
-}
-
-void ControllerClientImpl::SetLanguage(const std::string& language)
+void WebstackClient::SetLanguage(const std::string& language)
 {
     boost::mutex::scoped_lock lock(_mutex);
     if (language!= "") {
@@ -296,12 +262,12 @@ void ControllerClientImpl::SetLanguage(const std::string& language)
     // _SetupHTTPHeadersMultipartFormData();
 }
 
-void ControllerClientImpl::SetUserAgent(const std::string& userAgent)
+void WebstackClient::SetUserAgent(const std::string& userAgent)
 {
     CURL_OPTION_SETTER(_curl, CURLOPT_USERAGENT, userAgent.c_str());
 }
 
-void ControllerClientImpl::SetAdditionalHeaders(const std::vector<std::string>& additionalHeaders)
+void WebstackClient::SetAdditionalHeaders(const std::vector<std::string>& additionalHeaders)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _additionalHeaders = additionalHeaders;
@@ -310,7 +276,63 @@ void ControllerClientImpl::SetAdditionalHeaders(const std::vector<std::string>& 
     _SetupHTTPHeadersMultipartFormData();
 }
 
-void ControllerClientImpl::_ExecuteGraphQuery(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout, bool checkForErrors, bool returnRawResponse)
+const std::string& WebstackClient::GetUserName() const
+{
+    return _username;
+}
+
+const std::string& WebstackClient::GetBaseURI() const
+{
+    return _baseuri;
+}
+
+void WebstackClient::SetProxy(const std::string& serverport, const std::string& userpw)
+{
+    // mutally exclusive with unix endpoint settings
+    CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, NULL);
+    CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, serverport.c_str());
+    CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, userpw.c_str());
+}
+
+void WebstackClient::SetUnixEndpoint(const std::string& unixendpoint)
+{
+    // mutually exclusive with proxy settings
+    CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, NULL);
+    CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, NULL);
+    CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, unixendpoint.c_str());
+}
+
+void WebstackClient::RestartServer(double timeout)
+{
+    boost::mutex::scoped_lock lock(_mutex);
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
+    _uri = _baseuri + std::string("restartserver/");
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, _uri.c_str());
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_POST, 0L, 1L);
+    _buffer.clear();
+    _buffer.str("");
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
+    CURL_PERFORM(_curl);
+    long http_code = 0;
+    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if( http_code != 200 ) {
+        throw MUJIN_EXCEPTION_FORMAT0("Failed to restart server, please try again or contact MUJIN support", MEC_HTTPServer);
+    }
+}
+
+void WebstackClient::ExecuteGraphQuery(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout)
+{
+    _ExecuteGraphQuery(operationName, query, rVariables, rResult, rAlloc, timeout, true, false);
+}
+
+void WebstackClient::ExecuteGraphQueryRaw(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout)
+{
+    _ExecuteGraphQuery(operationName, query, rVariables, rResult, rAlloc, timeout, false, true);
+}
+
+void WebstackClient::_ExecuteGraphQuery(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout, bool checkForErrors, bool returnRawResponse)
 {
     rResult.SetNull(); // zero output
 
@@ -379,288 +401,135 @@ void ControllerClientImpl::_ExecuteGraphQuery(const char* operationName, const c
     }
 }
 
-void ControllerClientImpl::ExecuteGraphQuery(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout)
+std::string WebstackClient::GetVersion()
 {
-    _ExecuteGraphQuery(operationName, query, rVariables, rResult, rAlloc, timeout, true, false);
-}
-
-void ControllerClientImpl::ExecuteGraphQueryRaw(const char* operationName, const char* query, const rapidjson::Value& rVariables, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& rAlloc, double timeout)
-{
-    _ExecuteGraphQuery(operationName, query, rVariables, rResult, rAlloc, timeout, false, true);
-}
-
-void ControllerClientImpl::RestartServer(double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
-    _uri = _baseuri + std::string("restartserver/");
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, _uri.c_str());
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_POST, 0L, 1L);
-    _buffer.clear();
-    _buffer.str("");
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
-    CURL_PERFORM(_curl);
-    long http_code = 0;
-    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if( http_code != 200 ) {
-        throw MUJIN_EXCEPTION_FORMAT0("Failed to restart server, please try again or contact MUJIN support", MEC_HTTPServer);
+    if (!_profile.IsObject()) {
+        _profile.SetObject();
+        CallGet("profile/", _profile);
     }
+    return GetJsonValueByKey<std::string>(_profile, "version");
 }
 
-void ControllerClientImpl::CancelAllJobs()
+void WebstackClient::CancelAllJobs()
 {
     CallDelete("job/?format=json", 204);
 }
 
-void ControllerClientImpl::GetRunTimeStatuses(std::vector<JobStatus>& statuses, int options)
+void WebstackClient::DownloadFileFromControllerIfModifiedSince_UTF8(const std::string& desturi, long localtimeval, long& remotetimeval, std::vector<unsigned char>& vdata, double timeout)
 {
-    rapidjson::Document pt(rapidjson::kObjectType);
-    std::string url = "job/?format=json&fields=pk,status,fnname,elapsedtime";
-    if( options & 1 ) {
-        url += std::string(",status_text");
-    }
-    CallGet(url, pt);
-    rapidjson::Value& objects = pt["objects"];
-    size_t i = 0;
-    statuses.resize(objects.Size());
-    for (rapidjson::Document::ValueIterator it=objects.Begin(); it != objects.End(); ++it) {
-
-        statuses[i].pk = GetJsonValueByKey<std::string>(*it, "pk");
-        statuses[i].code = GetStatusCode(GetJsonValueByKey<std::string>(*it, "status"));
-        statuses[i].type = GetJsonValueByKey<std::string>(*it, "fnname");
-        statuses[i].elapsedtime = GetJsonValueByKey<double>(*it, "elapsedtime");
-        if( options & 1 ) {
-            statuses[i].message = GetJsonValueByKey<std::string>(*it, "status_text");
-        }
-        i++;
-    }
-}
-
-void ControllerClientImpl::GetScenePrimaryKeys(std::vector<std::string>& scenekeys)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallGet("scene/?format=json&limit=0&fields=pk", pt);
-    rapidjson::Value& objects = pt["objects"];
-    scenekeys.resize(objects.Size());
-    size_t i = 0;
-    for (rapidjson::Document::ValueIterator it=objects.Begin(); it != objects.End(); ++it) {
-        scenekeys[i++] = GetJsonValueByKey<std::string>(*it, "pk");
-    }
-}
-
-SceneResourcePtr ControllerClientImpl::RegisterScene_UTF8(const std::string& uri, const std::string& scenetype)
-{
-    BOOST_ASSERT(scenetype.size()>0);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallPost_UTF8("scene/?format=json&fields=pk", str(boost::format("{\"uri\":\"%s\", \"scenetype\":\"%s\"}")%uri%scenetype), pt);
-    std::string pk = GetJsonValueByKey<std::string>(pt, "pk");
-    SceneResourcePtr scene(new SceneResource(shared_from_this(), pk));
-    return scene;
-}
-
-SceneResourcePtr ControllerClientImpl::RegisterScene_UTF16(const std::wstring& uri, const std::string& scenetype)
-{
-    BOOST_ASSERT(scenetype.size()>0);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallPost_UTF16("scene/?format=json&fields=pk", str(boost::wformat(L"{\"uri\":\"%s\", \"scenetype\":\"%s\"}")%uri%scenetype.c_str()), pt);
-    std::string pk = GetJsonValueByKey<std::string>(pt, "pk");
-    SceneResourcePtr scene(new SceneResource(shared_from_this(), pk));
-    return scene;
-}
-
-SceneResourcePtr ControllerClientImpl::ImportSceneToCOLLADA_UTF8(const std::string& importuri, const std::string& importformat, const std::string& newuri, bool overwrite)
-{
-    BOOST_ASSERT(importformat.size()>0);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallPost_UTF8(str(boost::format("scene/?format=json&fields=pk&overwrite=%d")%overwrite), str(boost::format("{\"reference_uri\":\"%s\", \"reference_scenetype\":\"%s\", \"uri\":\"%s\"}")%importuri%importformat%newuri), pt);
-    std::string pk = GetJsonValueByKey<std::string>(pt, "pk");
-    SceneResourcePtr scene(new SceneResource(shared_from_this(), pk));
-    return scene;
-}
-
-SceneResourcePtr ControllerClientImpl::ImportSceneToCOLLADA_UTF16(const std::wstring& importuri, const std::string& importformat, const std::wstring& newuri, bool overwrite)
-{
-    BOOST_ASSERT(importformat.size()>0);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallPost_UTF16(str(boost::format("scene/?format=json&fields=pk&overwrite=%d")%overwrite), str(boost::wformat(L"{\"reference_uri\":\"%s\", \"reference_scenetype\":\"%s\", \"uri\":\"%s\"}")%importuri%importformat.c_str()%newuri), pt);
-    std::string pk = GetJsonValueByKey<std::string>(pt, "pk");
-    SceneResourcePtr scene(new SceneResource(shared_from_this(), pk));
-    return scene;
-}
-
-void ControllerClientImpl::SyncUpload_UTF8(const std::string& _sourcefilename, const std::string& destinationdir, const std::string& scenetype)
-{
-    // TODO use curl_multi_perform to allow uploading of multiple files simultaneously
-    // TODO should LOCK with WebDAV repository?
     boost::mutex::scoped_lock lock(_mutex);
-    std::string baseuploaduri;
-    if( destinationdir.size() >= 7 && destinationdir.substr(0,7) == "mujin:/" ) {
-        baseuploaduri = _basewebdavuri;
-        baseuploaduri += _EncodeWithoutSeparator(destinationdir.substr(7));
-        _EnsureWebDAVDirectories(destinationdir.substr(7));
-    }
-    else {
-        baseuploaduri = destinationdir;
-    }
-    // ensure trailing slash
-    if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
-        baseuploaduri.push_back('/');
-    }
-
-    std::string sourcefilename = _sourcefilename;
-#if defined(_WIN32) || defined(_WIN64)
-    // check if / is used anywhere and send a warning if it is
-    if( sourcefilename.find_first_of('/') != std::string::npos ) {
-        std::stringstream ss;
-        ss << "scene filename '" << sourcefilename << "' is using /, so replacing this with \\";
-        MUJIN_LOG_INFO(ss.str());
-        for(size_t i = 0; i < sourcefilename.size(); ++i) {
-            if( sourcefilename[i] == '/' ) {
-                sourcefilename[i] = '\\';
-            }
-        }
-    }
-#endif
-
-    size_t nBaseFilenameStartIndex = sourcefilename.find_last_of(s_filesep);
-    if( nBaseFilenameStartIndex == std::string::npos ) {
-        // there's no path?
-        nBaseFilenameStartIndex = 0;
-    }
-    else {
-        nBaseFilenameStartIndex++;
-    }
-
-    if( scenetype == "wincaps" ) {
-        std::wstring strWCNPath_utf16 = ParseWincapsWCNPath<std::string>(sourcefilename, encoding::ConvertUTF8ToFileSystemEncoding);
-        if( strWCNPath_utf16.size() > 0 ) {
-            std::string strWCNPath;
-            utf8::utf16to8(strWCNPath_utf16.begin(), strWCNPath_utf16.end(), std::back_inserter(strWCNPath));
-            std::string strWCNURI = strWCNPath;
-            size_t lastindex = 0;
-            for(size_t i = 0; i < strWCNURI.size(); ++i) {
-                if( strWCNURI[i] == '\\' ) {
-                    strWCNURI[i] = '/';
-                    strWCNPath[i] = s_filesep;
-                    lastindex = i;
-                }
-            }
-            std::string sCopyDir = sourcefilename.substr(0,nBaseFilenameStartIndex) + strWCNPath.substr(0,lastindex);
-            _UploadDirectoryToController_UTF8(sCopyDir, baseuploaduri+_EncodeWithoutSeparator(strWCNURI.substr(0,lastindex)));
-        }
-    }
-    else if( scenetype == "rttoolbox" || scenetype == "cecrobodiaxml" ) {
-        if( nBaseFilenameStartIndex > 0 ) {
-            // sourcefilename[nBaseFilenameStartIndex] should be == s_filesep
-            _UploadDirectoryToController_UTF8(sourcefilename.substr(0,nBaseFilenameStartIndex), baseuploaduri);
-        }
-        return;
-    }
-
-    // sourcefilenamebase is utf-8
-    std::string uploadfileuri = baseuploaduri + EscapeString(sourcefilename.substr(nBaseFilenameStartIndex));
-    _UploadFileToController_UTF8(sourcefilename, uploadfileuri);
-
-    /* webdav operations
-       const char *postdata =
-       "<?xml version=\"1.0\"?><D:searchrequest xmlns:D=\"DAV:\" >"
-       "<D:sql>SELECT \"http://schemas.microsoft.com/repl/contenttag\""
-       " from SCOPE ('deep traversal of \"/exchange/adb/Calendar/\"') "
-       "WHERE \"DAV:isfolder\" = True</D:sql></D:searchrequest>\r\n";
-     */
+    _DownloadFileFromController(_PrepareDestinationURI_UTF8(desturi, false), localtimeval, remotetimeval, vdata, timeout);
 }
 
-void ControllerClientImpl::SyncUpload_UTF16(const std::wstring& _sourcefilename_utf16, const std::wstring& destinationdir_utf16, const std::string& scenetype)
+void WebstackClient::DownloadFileFromControllerIfModifiedSince_UTF16(const std::wstring& desturi, long localtimeval, long& remotetimeval, std::vector<unsigned char>& vdata, double timeout)
 {
-    // TODO use curl_multi_perform to allow uploading of multiple files simultaneously
-    // TODO should LOCK with WebDAV repository?
     boost::mutex::scoped_lock lock(_mutex);
-    std::string baseuploaduri;
-    std::string destinationdir_utf8;
-    utf8::utf16to8(destinationdir_utf16.begin(), destinationdir_utf16.end(), std::back_inserter(destinationdir_utf8));
-
-    if( destinationdir_utf8.size() >= 7 && destinationdir_utf8.substr(0,7) == "mujin:/" ) {
-        baseuploaduri = _basewebdavuri;
-        std::string s = destinationdir_utf8.substr(7);
-        baseuploaduri += _EncodeWithoutSeparator(s);
-        _EnsureWebDAVDirectories(s);
-    }
-    else {
-        baseuploaduri = destinationdir_utf8;
-    }
-    // ensure trailing slash
-    if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
-        baseuploaduri.push_back('/');
-    }
-
-    std::wstring sourcefilename_utf16 = _sourcefilename_utf16;
-#if defined(_WIN32) || defined(_WIN64)
-    // check if / is used anywhere and send a warning if it is
-    if( sourcefilename_utf16.find_first_of(L'/') != std::wstring::npos ) {
-        std::stringstream ss;
-        ss << "scene filename '" << encoding::ConvertUTF16ToFileSystemEncoding(sourcefilename_utf16) << "' is using /, so replacing this with \\";
-        MUJIN_LOG_INFO(ss.str());
-        for(size_t i = 0; i < sourcefilename_utf16.size(); ++i) {
-            if( sourcefilename_utf16[i] == L'/' ) {
-                sourcefilename_utf16[i] = L'\\';
-            }
-        }
-
-        boost::replace_all(sourcefilename_utf16, L"/", L"\\");
-    }
-#endif
-
-    size_t nBaseFilenameStartIndex = sourcefilename_utf16.find_last_of(s_wfilesep);
-    if( nBaseFilenameStartIndex == std::string::npos ) {
-        // there's no path?
-        nBaseFilenameStartIndex = 0;
-    }
-    else {
-        nBaseFilenameStartIndex++;
-    }
-
-    if( scenetype == "wincaps" ) {
-        std::wstring strWCNPath_utf16 = ParseWincapsWCNPath<std::wstring>(sourcefilename_utf16, encoding::ConvertUTF16ToFileSystemEncoding);
-        if( strWCNPath_utf16.size() > 0 ) {
-            std::string strWCNURI;
-            utf8::utf16to8(strWCNPath_utf16.begin(), strWCNPath_utf16.end(), std::back_inserter(strWCNURI));
-            size_t lastindex_utf8 = 0;
-            for(size_t i = 0; i < strWCNURI.size(); ++i) {
-                if( strWCNURI[i] == '\\' ) {
-                    strWCNURI[i] = '/';
-                    lastindex_utf8 = i;
-                }
-            }
-            size_t lastindex_utf16 = 0;
-            for(size_t i = 0; i < strWCNPath_utf16.size(); ++i) {
-                if( strWCNPath_utf16[i] == '\\' ) {
-                    strWCNPath_utf16[i] = s_wfilesep;
-                    lastindex_utf16 = i;
-                }
-            }
-            std::wstring sCopyDir_utf16 = sourcefilename_utf16.substr(0,nBaseFilenameStartIndex) + strWCNPath_utf16.substr(0,lastindex_utf16);
-            _UploadDirectoryToController_UTF16(sCopyDir_utf16, baseuploaduri+_EncodeWithoutSeparator(strWCNURI.substr(0,lastindex_utf8)));
-        }
-    }
-    else if( scenetype == "rttoolbox" || scenetype == "cecrobodiaxml" ) {
-        if( nBaseFilenameStartIndex > 0 ) {
-            // sourcefilename_utf16[nBaseFilenameStartIndex] should be == s_filesep
-            _UploadDirectoryToController_UTF16(sourcefilename_utf16.substr(0,nBaseFilenameStartIndex), baseuploaduri);
-        }
-        return;
-    }
-
-    // sourcefilenamebase is utf-8
-    std::string sourcefilenamedir_utf8;
-    utf8::utf16to8(sourcefilename_utf16.begin()+nBaseFilenameStartIndex, sourcefilename_utf16.end(), std::back_inserter(sourcefilenamedir_utf8));
-    std::string uploadfileuri = baseuploaduri + EscapeString(sourcefilenamedir_utf8);
-    _UploadFileToController_UTF16(sourcefilename_utf16, uploadfileuri);
+    _DownloadFileFromController(_PrepareDestinationURI_UTF16(desturi, false), localtimeval, remotetimeval, vdata, timeout);
 }
 
-/// \brief expectedhttpcode is not 0, then will check with the returned http code and if not equal will throw an exception
-int ControllerClientImpl::CallGet(const std::string& relativeuri, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+void WebstackClient::_DownloadFileFromController(const std::string& desturi, long localtimeval, long &remotetimeval, std::vector<unsigned char>& outputdata, double timeout)
+{
+    remotetimeval = 0;
+
+    // ask for remote file time
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_FILETIME, 0L, 1L);
+
+    // use if modified since if local file time is provided
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMECONDITION, CURL_TIMECOND_NONE, localtimeval > 0 ? CURL_TIMECOND_IFMODSINCE : CURL_TIMECOND_NONE);
+    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEVALUE, 0L, localtimeval > 0 ? localtimeval : 0L);
+
+    // do the get call
+    long http_code = _CallGet(desturi, outputdata, 0, timeout);
+    if ((http_code != 200 && http_code != 304)) {
+        if (outputdata.size() > 0) {
+            std::stringstream ss;
+            ss.write((const char*)&outputdata[0], outputdata.size());
+            throw MUJIN_EXCEPTION_FORMAT("HTTP GET to '%s' returned HTTP status %s: %s", desturi%http_code%ss.str(), MEC_HTTPServer);
+        }
+        throw MUJIN_EXCEPTION_FORMAT("HTTP GET to '%s' returned HTTP status %s", desturi%http_code, MEC_HTTPServer);
+    }
+
+    // retrieve remote file time
+    if (http_code != 304) {
+        // got the entire file so fill in the timestamp of that file
+        CURL_INFO_GETTER(_curl, CURLINFO_FILETIME, &remotetimeval);
+    }
+}
+
+void WebstackClient::ModifySceneAddReferenceObjectPK(const std::string &scenepk, const std::string &referenceobjectpk, double timeout)
+{
+    rapidjson::Document pt, pt2;
+    rapidjson::Value value;
+
+    pt.SetObject();
+
+    value.SetString(scenepk.c_str(), pt.GetAllocator());
+    pt.AddMember("scenepk", value, pt.GetAllocator());
+
+    value.SetString(referenceobjectpk.c_str(), pt.GetAllocator());
+    pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
+
+    boost::mutex::scoped_lock lock(_mutex);
+    _CallPost(_baseuri + "referenceobjectpks/add/", DumpJson(pt), pt2, 200, timeout);
+}
+
+void WebstackClient::ModifySceneRemoveReferenceObjectPK(const std::string &scenepk, const std::string &referenceobjectpk, double timeout)
+{
+    rapidjson::Document pt, pt2;
+    rapidjson::Value value;
+
+    pt.SetObject();
+
+    value.SetString(scenepk.c_str(), pt.GetAllocator());
+    pt.AddMember("scenepk", value, pt.GetAllocator());
+
+    value.SetString(referenceobjectpk.c_str(), pt.GetAllocator());
+    pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
+
+    boost::mutex::scoped_lock lock(_mutex);
+    _CallPost(_baseuri + "referenceobjectpks/remove/", DumpJson(pt), pt2, 200, timeout);
+}
+
+const std::string& WebstackClient::GetDefaultTaskType()
+{
+    return _defaulttasktype;
+}
+
+std::string WebstackClient::GetScenePrimaryKeyFromURI_UTF8(const std::string& uri)
+{
+    size_t index = uri.find(":/");
+    if (index == std::string::npos) {
+        throw MUJIN_EXCEPTION_FORMAT("bad URI: %s", uri, MEC_InvalidArguments);
+    }
+    return EscapeString(uri.substr(index+2));
+}
+
+std::string WebstackClient::GetScenePrimaryKeyFromURI_UTF16(const std::wstring& uri)
+{
+    std::string utf8line;
+    utf8::utf16to8(uri.begin(), uri.end(), std::back_inserter(utf8line));
+    return GetScenePrimaryKeyFromURI_UTF8(utf8line);
+}
+
+std::string WebstackClient::CreateObjectGeometry(const std::string& objectPk, const std::string& geometryName, const std::string& linkPk, const std::string& geomtype, double timeout)
+{
+    rapidjson::Document pt(rapidjson::kObjectType);
+    const std::string geometryData("{\"name\":\"" + geometryName + "\", \"linkpk\":\"" + linkPk + "\", \"geomtype\": \"" + geomtype + "\"}");
+    const std::string uri(str(boost::format("object/%s/geometry/") % objectPk));
+
+    CallPost(uri, geometryData, pt, 201, timeout);
+    return GetJsonValueByKey<std::string>(pt, "pk");
+}
+
+std::string WebstackClient::SetObjectGeometryMesh(const std::string& objectPk, const std::string& geometryPk, const std::vector<unsigned char>& meshData, const std::string& unit, double timeout)
+{
+    rapidjson::Document pt(rapidjson::kObjectType);
+    const std::string uri(str(boost::format("object/%s/geometry/%s/?unit=%s")%objectPk%geometryPk%unit));
+    CallPutSTL(uri, meshData, pt, 202, timeout);
+    return GetJsonValueByKey<std::string>(pt, "pk");
+}
+
+int WebstackClient::CallGet(const std::string& relativeuri, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
@@ -668,7 +537,7 @@ int ControllerClientImpl::CallGet(const std::string& relativeuri, rapidjson::Doc
     return _CallGet(_uri, pt, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::_CallGet(const std::string& desturi, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::_CallGet(const std::string& desturi, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_INFO(str(boost::format("GET %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -693,7 +562,7 @@ int ControllerClientImpl::_CallGet(const std::string& desturi, rapidjson::Docume
     return http_code;
 }
 
-int ControllerClientImpl::CallGet(const std::string& relativeuri, std::string& outputdata, int expectedhttpcode, double timeout)
+int WebstackClient::CallGet(const std::string& relativeuri, std::string& outputdata, int expectedhttpcode, double timeout)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
@@ -701,7 +570,7 @@ int ControllerClientImpl::CallGet(const std::string& relativeuri, std::string& o
     return _CallGet(_uri, outputdata, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::_CallGet(const std::string& desturi, std::string& outputdata, int expectedhttpcode, double timeout)
+int WebstackClient::_CallGet(const std::string& desturi, std::string& outputdata, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_VERBOSE(str(boost::format("GET %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -729,7 +598,7 @@ int ControllerClientImpl::_CallGet(const std::string& desturi, std::string& outp
     return http_code;
 }
 
-int ControllerClientImpl::CallGet(const std::string& relativeuri, std::ostream& outputStream, int expectedhttpcode, double timeout)
+int WebstackClient::CallGet(const std::string& relativeuri, std::ostream& outputStream, int expectedhttpcode, double timeout)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
@@ -737,7 +606,7 @@ int ControllerClientImpl::CallGet(const std::string& relativeuri, std::ostream& 
     return _CallGet(_uri, outputStream, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::_CallGet(const std::string& desturi, std::ostream& outputStream, int expectedhttpcode, double timeout)
+int WebstackClient::_CallGet(const std::string& desturi, std::ostream& outputStream, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_VERBOSE(str(boost::format("GET %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -756,7 +625,7 @@ int ControllerClientImpl::_CallGet(const std::string& desturi, std::ostream& out
     return http_code;
 }
 
-int ControllerClientImpl::CallGet(const std::string& relativeuri, std::vector<unsigned char>& outputdata, int expectedhttpcode, double timeout)
+int WebstackClient::CallGet(const std::string& relativeuri, std::vector<unsigned char>& outputdata, int expectedhttpcode, double timeout)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
@@ -764,7 +633,7 @@ int ControllerClientImpl::CallGet(const std::string& relativeuri, std::vector<un
     return _CallGet(_uri, outputdata, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::_CallGet(const std::string& desturi, std::vector<unsigned char>& outputdata, int expectedhttpcode, double timeout)
+int WebstackClient::_CallGet(const std::string& desturi, std::vector<unsigned char>& outputdata, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_VERBOSE(str(boost::format("GET %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -794,8 +663,7 @@ int ControllerClientImpl::_CallGet(const std::string& desturi, std::vector<unsig
     return http_code;
 }
 
-/// \brief expectedhttpcode is not 0, then will check with the returned http code and if not equal will throw an exception
-int ControllerClientImpl::CallPost(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::CallPost(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_DEBUG(str(boost::format("POST %s%s")%_baseapiuri%relativeuri));
     boost::mutex::scoped_lock lock(_mutex);
@@ -805,7 +673,7 @@ int ControllerClientImpl::CallPost(const std::string& relativeuri, const std::st
 }
 
 /// \brief expectedhttpcode is not 0, then will check with the returned http code and if not equal will throw an exception
-int ControllerClientImpl::_CallPost(const std::string& desturi, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::_CallPost(const std::string& desturi, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_VERBOSE(str(boost::format("POST %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -834,17 +702,27 @@ int ControllerClientImpl::_CallPost(const std::string& desturi, const std::strin
     return http_code;
 }
 
-int ControllerClientImpl::CallPost_UTF8(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::CallPost_UTF8(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     return CallPost(relativeuri, encoding::ConvertUTF8ToFileSystemEncoding(data), pt, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::CallPost_UTF16(const std::string& relativeuri, const std::wstring& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::CallPost_UTF16(const std::string& relativeuri, const std::wstring& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
 {
     return CallPost(relativeuri, encoding::ConvertUTF16ToFileSystemEncoding(data), pt, expectedhttpcode, timeout);
 }
 
-int ControllerClientImpl::_CallPut(const std::string& relativeuri, const void* pdata, size_t nDataSize, rapidjson::Document& pt, curl_slist* headers, int expectedhttpcode, double timeout)
+int WebstackClient::CallPutJSON(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+{
+    return _CallPut(relativeuri, static_cast<const void*>(&data[0]), data.size(), pt, _httpheadersjson, expectedhttpcode, timeout);
+}
+
+int WebstackClient::CallPutSTL(const std::string& relativeuri, const std::vector<unsigned char>& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+{
+    return _CallPut(relativeuri, static_cast<const void*> (&data[0]), data.size(), pt, _httpheadersstl, expectedhttpcode, timeout);
+}
+
+int WebstackClient::_CallPut(const std::string& relativeuri, const void* pdata, size_t nDataSize, rapidjson::Document& pt, curl_slist* headers, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_DEBUG(str(boost::format("PUT %s%s")%_baseapiuri%relativeuri));
     boost::mutex::scoped_lock lock(_mutex);
@@ -876,17 +754,7 @@ int ControllerClientImpl::_CallPut(const std::string& relativeuri, const void* p
     return http_code;
 }
 
-int ControllerClientImpl::CallPutSTL(const std::string& relativeuri, const std::vector<unsigned char>& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
-{
-    return _CallPut(relativeuri, static_cast<const void*> (&data[0]), data.size(), pt, _httpheadersstl, expectedhttpcode, timeout);
-}
-
-int ControllerClientImpl::CallPutJSON(const std::string& relativeuri, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
-{
-    return _CallPut(relativeuri, static_cast<const void*>(&data[0]), data.size(), pt, _httpheadersjson, expectedhttpcode, timeout);
-}
-
-void ControllerClientImpl::CallDelete(const std::string& relativeuri, int expectedhttpcode, double timeout)
+void WebstackClient::CallDelete(const std::string& relativeuri, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_DEBUG(str(boost::format("DELETE %s%s")%_baseapiuri%relativeuri));
     boost::mutex::scoped_lock lock(_mutex);
@@ -912,115 +780,12 @@ void ControllerClientImpl::CallDelete(const std::string& relativeuri, int expect
     }
 }
 
-std::stringstream& ControllerClientImpl::GetBuffer()
+std::stringstream& WebstackClient::GetBuffer()
 {
     return _buffer;
 }
 
-void ControllerClientImpl::SetDefaultSceneType(const std::string& scenetype)
-{
-    _defaultscenetype = scenetype;
-}
-
-const std::string& ControllerClientImpl::GetDefaultSceneType()
-{
-    return _defaultscenetype;
-}
-
-void ControllerClientImpl::SetDefaultTaskType(const std::string& tasktype)
-{
-    _defaulttasktype = tasktype;
-}
-
-const std::string& ControllerClientImpl::GetDefaultTaskType()
-{
-    return _defaulttasktype;
-}
-
-std::string ControllerClientImpl::GetScenePrimaryKeyFromURI_UTF8(const std::string& uri)
-{
-    size_t index = uri.find(":/");
-    if (index == std::string::npos) {
-        throw MUJIN_EXCEPTION_FORMAT("bad URI: %s", uri, MEC_InvalidArguments);
-    }
-    return EscapeString(uri.substr(index+2));
-}
-
-std::string ControllerClientImpl::GetScenePrimaryKeyFromURI_UTF16(const std::wstring& uri)
-{
-    std::string utf8line;
-    utf8::utf16to8(uri.begin(), uri.end(), std::back_inserter(utf8line));
-    return GetScenePrimaryKeyFromURI_UTF8(utf8line);
-}
-
-std::string ControllerClientImpl::GetPrimaryKeyFromName_UTF8(const std::string& name)
-{
-    return EscapeString(name);
-}
-
-std::string ControllerClientImpl::GetPrimaryKeyFromName_UTF16(const std::wstring& name)
-{
-    std::string name_utf8;
-    utf8::utf16to8(name.begin(), name.end(), std::back_inserter(name_utf8));
-    return GetPrimaryKeyFromName_UTF8(name_utf8);
-}
-
-std::string ControllerClientImpl::GetNameFromPrimaryKey_UTF8(const std::string& pk)
-{
-    return UnescapeString(pk);
-}
-
-std::wstring ControllerClientImpl::GetNameFromPrimaryKey_UTF16(const std::string& pk)
-{
-    std::string utf8 = GetNameFromPrimaryKey_UTF8(pk);
-    std::wstring utf16;
-    utf8::utf8to16(utf8.begin(), utf8.end(), std::back_inserter(utf16));
-    return utf16;
-}
-
-std::string ControllerClientImpl::CreateObjectGeometry(const std::string& objectPk, const std::string& geometryName, const std::string& linkPk, const std::string& geomtype, double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    const std::string geometryData("{\"name\":\"" + geometryName + "\", \"linkpk\":\"" + linkPk + "\", \"geomtype\": \"" + geomtype + "\"}");
-    const std::string uri(str(boost::format("object/%s/geometry/") % objectPk));
-
-    CallPost(uri, geometryData, pt, 201, timeout);
-    return GetJsonValueByKey<std::string>(pt, "pk");
-}
-
-std::string ControllerClientImpl::CreateIkParam(const std::string& objectPk, const std::string& name, const std::string& iktype, double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    const std::string ikparamData("{\"name\":\"" + name + "\", \"iktype\":\"" + iktype + "\"}");
-    const std::string uri(str(boost::format("object/%s/ikparam/") % objectPk));
-
-    CallPost(uri, ikparamData, pt, 201, timeout);
-    return GetJsonValueByKey<std::string>(pt, "pk");
-}
-
-std::string ControllerClientImpl::CreateLink(const std::string& objectPk, const std::string& parentlinkPk, const std::string& name, const Real quaternion[4], const Real translate[3], double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    std::string data(str(boost::format("{\"name\":\"%s\", \"quaternion\":[%.15f,%.15f,%.15f,%.15f], \"translate\":[%.15f,%.15f,%.15f]")%name%quaternion[0]%quaternion[1]%quaternion[2]%quaternion[3]%translate[0]%translate[1]%translate[2]));
-    if (!parentlinkPk.empty()) {
-        data += ", \"parentlinkpk\": \"" + parentlinkPk + "\"";
-    }
-    data += "}";
-    const std::string uri(str(boost::format("object/%s/link/") % objectPk));
-
-    CallPost(uri, data, pt, 201, timeout);
-    return GetJsonValueByKey<std::string>(pt, "pk");
-}
-
-std::string ControllerClientImpl::SetObjectGeometryMesh(const std::string& objectPk, const std::string& geometryPk, const std::vector<unsigned char>& meshData, const std::string& unit, double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    const std::string uri(str(boost::format("object/%s/geometry/%s/?unit=%s")%objectPk%geometryPk%unit));
-    CallPutSTL(uri, meshData, pt, 202, timeout);
-    return GetJsonValueByKey<std::string>(pt, "pk");
-}
-
-int ControllerClientImpl::_WriteStringStreamCallback(char *data, size_t size, size_t nmemb, std::stringstream *writerData)
+int WebstackClient::_WriteStringStreamCallback(char *data, size_t size, size_t nmemb, std::stringstream *writerData)
 {
     if (writerData == NULL) {
         return 0;
@@ -1029,7 +794,7 @@ int ControllerClientImpl::_WriteStringStreamCallback(char *data, size_t size, si
     return size * nmemb;
 }
 
-int ControllerClientImpl::_WriteOStreamCallback(char *data, size_t size, size_t nmemb, std::ostream *writerData)
+int WebstackClient::_WriteOStreamCallback(char *data, size_t size, size_t nmemb, std::ostream *writerData)
 {
     if (writerData == NULL) {
         return 0;
@@ -1038,7 +803,7 @@ int ControllerClientImpl::_WriteOStreamCallback(char *data, size_t size, size_t 
     return size * nmemb;
 }
 
-int ControllerClientImpl::_WriteVectorCallback(char *data, size_t size, size_t nmemb, std::vector<unsigned char> *writerData)
+int WebstackClient::_WriteVectorCallback(char *data, size_t size, size_t nmemb, std::vector<unsigned char> *writerData)
 {
     if (writerData == NULL) {
         return 0;
@@ -1047,7 +812,7 @@ int ControllerClientImpl::_WriteVectorCallback(char *data, size_t size, size_t n
     return size * nmemb;
 }
 
-int ControllerClientImpl::_ReadIStreamCallback(char *data, size_t size, size_t nmemb, std::istream *readerData)
+int WebstackClient::_ReadIStreamCallback(char *data, size_t size, size_t nmemb, std::istream *readerData)
 {
     if (readerData == NULL) {
         return 0;
@@ -1055,7 +820,7 @@ int ControllerClientImpl::_ReadIStreamCallback(char *data, size_t size, size_t n
     return readerData->read(data, size*nmemb).gcount();
 }
 
-void ControllerClientImpl::_SetupHTTPHeadersJSON()
+void WebstackClient::_SetupHTTPHeadersJSON()
 {
     // set the header to only send json
     std::string s = std::string("Content-Type: application/json; charset=") + _charset;
@@ -1079,7 +844,7 @@ void ControllerClientImpl::_SetupHTTPHeadersJSON()
     }
 }
 
-void ControllerClientImpl::_SetupHTTPHeadersSTL()
+void WebstackClient::_SetupHTTPHeadersSTL()
 {
     // set the header to only send stl
     std::string s = std::string("Content-Type: application/sla");
@@ -1099,7 +864,7 @@ void ControllerClientImpl::_SetupHTTPHeadersSTL()
     }
 }
 
-void ControllerClientImpl::_SetupHTTPHeadersMultipartFormData()
+void WebstackClient::_SetupHTTPHeadersMultipartFormData()
 {
     // set the header to only send stl
     std::string s = std::string("Content-Type: multipart/form-data");
@@ -1119,7 +884,78 @@ void ControllerClientImpl::_SetupHTTPHeadersMultipartFormData()
     }
 }
 
-std::string ControllerClientImpl::_EncodeWithoutSeparator(const std::string& raw)
+std::string WebstackClient::_PrepareDestinationURI_UTF8(const std::string& rawuri, bool bEnsurePath, bool bEnsureSlash, bool bIsDirectory)
+{
+    std::string baseuploaduri;
+    if( rawuri.size() >= 7 && rawuri.substr(0,7) == "mujin:/" ) {
+        baseuploaduri = _basewebdavuri;
+        std::string s = rawuri.substr(7);
+        baseuploaduri += _EncodeWithoutSeparator(s);
+        if( bEnsurePath ) {
+            if( !bIsDirectory ) {
+                size_t nBaseFilenameStartIndex = s.find_last_of(s_filesep);
+                if( nBaseFilenameStartIndex != std::string::npos ) {
+                    s = s.substr(0, nBaseFilenameStartIndex);
+                } else {
+                    s = "";
+                }
+            }
+            _EnsureWebDAVDirectories(s);
+        }
+    }
+    else {
+        if( !bEnsureSlash ) {
+            return rawuri;
+        }
+        baseuploaduri = rawuri;
+    }
+    if( bEnsureSlash ) {
+        // ensure trailing slash
+        if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
+            baseuploaduri.push_back('/');
+        }
+    }
+    return baseuploaduri;
+}
+
+std::string WebstackClient::_PrepareDestinationURI_UTF16(const std::wstring& rawuri_utf16, bool bEnsurePath, bool bEnsureSlash, bool bIsDirectory)
+{
+    std::string baseuploaduri;
+    std::string desturi_utf8;
+    utf8::utf16to8(rawuri_utf16.begin(), rawuri_utf16.end(), std::back_inserter(desturi_utf8));
+
+    if( desturi_utf8.size() >= 7 && desturi_utf8.substr(0,7) == "mujin:/" ) {
+        baseuploaduri = _basewebdavuri;
+        std::string s = desturi_utf8.substr(7);
+        baseuploaduri += _EncodeWithoutSeparator(s);
+        if( bEnsurePath ) {
+            if( !bIsDirectory ) {
+                size_t nBaseFilenameStartIndex = s.find_last_of(s_filesep);
+                if( nBaseFilenameStartIndex != std::string::npos ) {
+                    s = s.substr(0, nBaseFilenameStartIndex);
+                } else {
+                    s = "";
+                }
+            }
+            _EnsureWebDAVDirectories(s);
+        }
+    }
+    else {
+        if( !bEnsureSlash ) {
+            return desturi_utf8;
+        }
+        baseuploaduri = desturi_utf8;
+    }
+    if( bEnsureSlash ) {
+        // ensure trailing slash
+        if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
+            baseuploaduri.push_back('/');
+        }
+    }
+    return baseuploaduri;
+}
+
+std::string WebstackClient::_EncodeWithoutSeparator(const std::string& raw)
 {
     std::string output;
     size_t startindex = 0;
@@ -1138,7 +974,7 @@ std::string ControllerClientImpl::_EncodeWithoutSeparator(const std::string& raw
     return output;
 }
 
-void ControllerClientImpl::_EnsureWebDAVDirectories(const std::string& relativeuri, double timeout)
+void WebstackClient::_EnsureWebDAVDirectories(const std::string& relativeuri, double timeout)
 {
     if (relativeuri.empty()) {
         return;
@@ -1199,796 +1035,6 @@ void ControllerClientImpl::_EnsureWebDAVDirectories(const std::string& relativeu
         if( http_code != 201 && http_code != 301 ) {
             throw MUJIN_EXCEPTION_FORMAT("HTTP MKCOL failed with HTTP status %d: %s", http_code%_errormessage, MEC_HTTPServer);
         }
-    }
-}
-
-std::string ControllerClientImpl::_PrepareDestinationURI_UTF8(const std::string& rawuri, bool bEnsurePath, bool bEnsureSlash, bool bIsDirectory)
-{
-    std::string baseuploaduri;
-    if( rawuri.size() >= 7 && rawuri.substr(0,7) == "mujin:/" ) {
-        baseuploaduri = _basewebdavuri;
-        std::string s = rawuri.substr(7);
-        baseuploaduri += _EncodeWithoutSeparator(s);
-        if( bEnsurePath ) {
-            if( !bIsDirectory ) {
-                size_t nBaseFilenameStartIndex = s.find_last_of(s_filesep);
-                if( nBaseFilenameStartIndex != std::string::npos ) {
-                    s = s.substr(0, nBaseFilenameStartIndex);
-                } else {
-                    s = "";
-                }
-            }
-            _EnsureWebDAVDirectories(s);
-        }
-    }
-    else {
-        if( !bEnsureSlash ) {
-            return rawuri;
-        }
-        baseuploaduri = rawuri;
-    }
-    if( bEnsureSlash ) {
-        // ensure trailing slash
-        if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
-            baseuploaduri.push_back('/');
-        }
-    }
-    return baseuploaduri;
-}
-
-std::string ControllerClientImpl::_PrepareDestinationURI_UTF16(const std::wstring& rawuri_utf16, bool bEnsurePath, bool bEnsureSlash, bool bIsDirectory)
-{
-    std::string baseuploaduri;
-    std::string desturi_utf8;
-    utf8::utf16to8(rawuri_utf16.begin(), rawuri_utf16.end(), std::back_inserter(desturi_utf8));
-
-    if( desturi_utf8.size() >= 7 && desturi_utf8.substr(0,7) == "mujin:/" ) {
-        baseuploaduri = _basewebdavuri;
-        std::string s = desturi_utf8.substr(7);
-        baseuploaduri += _EncodeWithoutSeparator(s);
-        if( bEnsurePath ) {
-            if( !bIsDirectory ) {
-                size_t nBaseFilenameStartIndex = s.find_last_of(s_filesep);
-                if( nBaseFilenameStartIndex != std::string::npos ) {
-                    s = s.substr(0, nBaseFilenameStartIndex);
-                } else {
-                    s = "";
-                }
-            }
-            _EnsureWebDAVDirectories(s);
-        }
-    }
-    else {
-        if( !bEnsureSlash ) {
-            return desturi_utf8;
-        }
-        baseuploaduri = desturi_utf8;
-    }
-    if( bEnsureSlash ) {
-        // ensure trailing slash
-        if( baseuploaduri[baseuploaduri.size()-1] != '/' ) {
-            baseuploaduri.push_back('/');
-        }
-    }
-    return baseuploaduri;
-}
-
-void ControllerClientImpl::UploadFileToController_UTF8(const std::string& filename, const std::string& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _UploadFileToController_UTF8(filename, _PrepareDestinationURI_UTF8(desturi, false));
-}
-
-void ControllerClientImpl::UploadFileToController_UTF16(const std::wstring& filename_utf16, const std::wstring& desturi_utf16)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _UploadFileToController_UTF16(filename_utf16, _PrepareDestinationURI_UTF16(desturi_utf16, false));
-}
-
-void ControllerClientImpl::UploadDataToController_UTF8(const void* data, size_t size, const std::string& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    const std::string filename = _PrepareDestinationURI_UTF8(desturi, false).substr(_basewebdavuri.size());
-    _UploadDataToControllerViaForm(data, size, filename, _baseuri + "fileupload");
-}
-
-void ControllerClientImpl::UploadDataToController_UTF16(const void* data, size_t size, const std::wstring& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    const std::string filename = _PrepareDestinationURI_UTF16(desturi, false).substr(_basewebdavuri.size());
-    _UploadDataToControllerViaForm(data, size, filename, _baseuri + "fileupload");
-}
-
-void ControllerClientImpl::UploadDirectoryToController_UTF8(const std::string& copydir, const std::string& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _UploadDirectoryToController_UTF8(copydir, _PrepareDestinationURI_UTF8(desturi, false, false, true));
-}
-
-void ControllerClientImpl::UploadDirectoryToController_UTF16(const std::wstring& copydir, const std::wstring& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _UploadDirectoryToController_UTF16(copydir, _PrepareDestinationURI_UTF16(desturi, false, false, true));
-}
-
-void ControllerClientImpl::DownloadFileFromController_UTF8(const std::string& desturi, std::vector<unsigned char>& vdata)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _CallGet(_PrepareDestinationURI_UTF8(desturi, false), vdata);
-}
-
-void ControllerClientImpl::DownloadFileFromController_UTF16(const std::wstring& desturi, std::vector<unsigned char>& vdata)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _CallGet(_PrepareDestinationURI_UTF16(desturi, false), vdata);
-}
-
-void ControllerClientImpl::DownloadFileFromControllerIfModifiedSince_UTF8(const std::string& desturi, long localtimeval, long& remotetimeval, std::vector<unsigned char>& vdata, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DownloadFileFromController(_PrepareDestinationURI_UTF8(desturi, false), localtimeval, remotetimeval, vdata, timeout);
-}
-
-void ControllerClientImpl::DownloadFileFromControllerIfModifiedSince_UTF16(const std::wstring& desturi, long localtimeval, long& remotetimeval, std::vector<unsigned char>& vdata, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DownloadFileFromController(_PrepareDestinationURI_UTF16(desturi, false), localtimeval, remotetimeval, vdata, timeout);
-}
-
-long ControllerClientImpl::GetModifiedTime(const std::string& uri, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-
-    // Copied from https://curl.haxx.se/libcurl/c/CURLINFO_FILETIME.html
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
-
-    // in order to resolve cache correctly, need to go thorugh file/download endpoint
-    std::string apiendpoint = _baseuri + "file/download/?filename=";
-    if( uri.size() >= 7 && uri.substr(0,7) == "mujin:/" ) {
-        apiendpoint += _EncodeWithoutSeparator(uri.substr(7));
-    }
-
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, apiendpoint.c_str());
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_FILETIME, 0L, 1L);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_NOBODY, 0L, 1L);
-    CURL_PERFORM(_curl);
-
-    long http_code = 0;
-    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if( http_code != 200 ) {
-        throw MUJIN_EXCEPTION_FORMAT("Cannot get modified date of %s for HTTP HEAD call: return is %s", uri%http_code, MEC_HTTPServer);
-    }
-
-    long filetime=-1;
-    CURL_INFO_GETTER(_curl, CURLINFO_FILETIME, &filetime);
-    return filetime;
-}
-
-void ControllerClientImpl::_DownloadFileFromController(const std::string& desturi, long localtimeval, long &remotetimeval, std::vector<unsigned char>& outputdata, double timeout)
-{
-    remotetimeval = 0;
-
-    // ask for remote file time
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_FILETIME, 0L, 1L);
-
-    // use if modified since if local file time is provided
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMECONDITION, CURL_TIMECOND_NONE, localtimeval > 0 ? CURL_TIMECOND_IFMODSINCE : CURL_TIMECOND_NONE);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEVALUE, 0L, localtimeval > 0 ? localtimeval : 0L);
-
-    // do the get call
-    long http_code = _CallGet(desturi, outputdata, 0, timeout);
-    if ((http_code != 200 && http_code != 304)) {
-        if (outputdata.size() > 0) {
-            std::stringstream ss;
-            ss.write((const char*)&outputdata[0], outputdata.size());
-            throw MUJIN_EXCEPTION_FORMAT("HTTP GET to '%s' returned HTTP status %s: %s", desturi%http_code%ss.str(), MEC_HTTPServer);
-        }
-        throw MUJIN_EXCEPTION_FORMAT("HTTP GET to '%s' returned HTTP status %s", desturi%http_code, MEC_HTTPServer);
-    }
-
-    // retrieve remote file time
-    if (http_code != 304) {
-        // got the entire file so fill in the timestamp of that file
-        CURL_INFO_GETTER(_curl, CURLINFO_FILETIME, &remotetimeval);
-    }
-}
-
-void ControllerClientImpl::SaveBackup(std::ostream& outputStream, bool config, bool media, const std::string& backupscenepks, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    std::string query=std::string("?config=")+(config ? "true" : "false")+"&media="+(media ? "true" : "false")+"&backupscenepks="+backupscenepks;
-    _CallGet(_baseuri+"backup/"+query, outputStream, 200, timeout);
-}
-
-void ControllerClientImpl::RestoreBackup(std::istream& inputStream, bool config, bool media, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    std::string query=std::string("?config=")+(config ? "true" : "false")+"&media="+(media ? "true" : "false");
-    _UploadFileToControllerViaForm(inputStream, "", _baseuri+"backup/"+query, timeout);
-}
-
-void ControllerClientImpl::Upgrade(std::istream& inputStream, bool autorestart, bool uploadonly, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    std::string query=std::string("?autorestart=")+(autorestart ? "1" : "0")+("&uploadonly=")+(uploadonly ? "1" : "0");
-
-    std::streampos originalPos = inputStream.tellg();
-    inputStream.seekg(0, std::ios::end);
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to seek inputStream to get the length", MEC_InvalidArguments);
-    }
-    std::streampos contentLength = inputStream.tellg() - originalPos;
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to tell the length of inputStream", MEC_InvalidArguments);
-    }
-    inputStream.seekg(originalPos, std::ios::beg);
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to rewind inputStream", MEC_InvalidArguments);
-    }
-
-    if(contentLength) {
-        _UploadFileToControllerViaForm(inputStream, "", _baseuri+"upgrade/"+query, timeout);
-    } else {
-        rapidjson::Document pt(rapidjson::kObjectType);
-        _CallPost(_baseuri+"upgrade/"+query, "", pt, 200, timeout);
-    }
-}
-
-bool ControllerClientImpl::GetUpgradeStatus(std::string& status, double &progress, double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    _CallGet(_baseuri+"upgrade/", pt, 200, timeout);
-    if(pt.IsNull()) {
-        return false;
-    }
-    status = GetJsonValueByKey<std::string>(pt, "status");
-    progress = GetJsonValueByKey<double>(pt, "progress");
-    return true;
-}
-
-void ControllerClientImpl::CancelUpgrade(double timeout)
-{
-    CallDelete(_baseuri+"upgrade/", 200, timeout);
-}
-
-void ControllerClientImpl::Reboot(double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    _CallPost(_baseuri+"reboot/", "", pt, 200, timeout);
-}
-
-void ControllerClientImpl::DeleteAllScenes(double timeout)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallDelete("scene/", 204, timeout);
-}
-
-void ControllerClientImpl::DeleteAllITLPrograms(double timeout)
-{
-    CallDelete("itl/", 204, timeout);
-}
-
-void ControllerClientImpl::DeleteFileOnController_UTF8(const std::string& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DeleteFileOnController(_PrepareDestinationURI_UTF8(desturi, false));
-}
-
-void ControllerClientImpl::DeleteFileOnController_UTF16(const std::wstring& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DeleteFileOnController(_PrepareDestinationURI_UTF16(desturi, false));
-}
-
-void ControllerClientImpl::DeleteDirectoryOnController_UTF8(const std::string& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DeleteDirectoryOnController(_PrepareDestinationURI_UTF8(desturi, false, false, true));
-}
-
-void ControllerClientImpl::DeleteDirectoryOnController_UTF16(const std::wstring& desturi)
-{
-    boost::mutex::scoped_lock lock(_mutex);
-    _DeleteDirectoryOnController(_PrepareDestinationURI_UTF16(desturi, false, false, true));
-}
-
-void ControllerClientImpl::ModifySceneAddReferenceObjectPK(const std::string &scenepk, const std::string &referenceobjectpk, double timeout)
-{
-    rapidjson::Document pt, pt2;
-    rapidjson::Value value;
-
-    pt.SetObject();
-
-    value.SetString(scenepk.c_str(), pt.GetAllocator());
-    pt.AddMember("scenepk", value, pt.GetAllocator());
-
-    value.SetString(referenceobjectpk.c_str(), pt.GetAllocator());
-    pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
-
-    boost::mutex::scoped_lock lock(_mutex);
-    _CallPost(_baseuri + "referenceobjectpks/add/", DumpJson(pt), pt2, 200, timeout);
-}
-
-void ControllerClientImpl::ModifySceneRemoveReferenceObjectPK(const std::string &scenepk, const std::string &referenceobjectpk, double timeout)
-{
-    rapidjson::Document pt, pt2;
-    rapidjson::Value value;
-
-    pt.SetObject();
-
-    value.SetString(scenepk.c_str(), pt.GetAllocator());
-    pt.AddMember("scenepk", value, pt.GetAllocator());
-
-    value.SetString(referenceobjectpk.c_str(), pt.GetAllocator());
-    pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
-
-    boost::mutex::scoped_lock lock(_mutex);
-    _CallPost(_baseuri + "referenceobjectpks/remove/", DumpJson(pt), pt2, 200, timeout);
-}
-
-void ControllerClientImpl::_UploadDirectoryToController_UTF8(const std::string& copydir_utf8, const std::string& rawuri)
-{
-    BOOST_ASSERT(rawuri.size()>0 && copydir_utf8.size()>0);
-
-    // if there's a trailing slash, have to get rid of it
-    std::string uri;
-    if( rawuri.at(rawuri.size()-1) == '/' ) {
-        if( copydir_utf8.at(copydir_utf8.size()-1) != s_filesep ) {
-            // append the copydir_utf8 name to rawuri
-            size_t nBaseFilenameStartIndex = copydir_utf8.find_last_of(s_filesep);
-            if( nBaseFilenameStartIndex == std::string::npos ) {
-                // there's no path?
-                nBaseFilenameStartIndex = 0;
-            }
-            else {
-                nBaseFilenameStartIndex++;
-            }
-            uri = rawuri + EscapeString(copydir_utf8.substr(nBaseFilenameStartIndex));
-        }
-        else {
-            // copydir also ends in a fileseparator, so remove the file separator from rawuri
-            uri = rawuri.substr(0, rawuri.size()-1);
-        }
-    }
-    else {
-        if (copydir_utf8.at(copydir_utf8.size()-1) == s_filesep) {
-            throw MUJIN_EXCEPTION_FORMAT("copydir '%s' cannot end in slash '%s'", copydir_utf8%s_filesep, MEC_InvalidArguments);
-        }
-        uri = rawuri;
-    }
-
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
-
-    {
-        // make sure the directory is created
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_CUSTOMREQUEST, NULL, "MKCOL");
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, uri.c_str());
-        CURL_PERFORM(_curl);
-        long http_code = 0;
-        CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-        if( http_code != 201 && http_code != 301 ) {
-            throw MUJIN_EXCEPTION_FORMAT("HTTP MKCOL failed for %s with HTTP status %d: %s", uri%http_code%_errormessage, MEC_HTTPServer);
-        }
-    }
-
-    std::string sCopyDir_FS = encoding::ConvertUTF8ToFileSystemEncoding(copydir_utf8);
-    // remove the fileseparator if it exists
-    std::stringstream ss;
-    ss << "uploading " << sCopyDir_FS << " -> " << uri;
-    MUJIN_LOG_INFO(ss.str());
-
-#if defined(_WIN32) || defined(_WIN64)
-    bool bhasseparator = false;
-    if( sCopyDir_FS.size() > 0 && sCopyDir_FS.at(sCopyDir_FS.size()-1) == s_filesep ) {
-        sCopyDir_FS.resize(sCopyDir_FS.size()-1);
-        bhasseparator = true;
-    }
-
-    WIN32_FIND_DATAA ffd;
-    std::string searchstr = sCopyDir_FS + std::string("\\*");
-    HANDLE hFind = FindFirstFileA(searchstr.c_str(), &ffd);
-    if (hFind == INVALID_HANDLE_VALUE) {
-        throw MUJIN_EXCEPTION_FORMAT("could not retrieve file data for %s", sCopyDir_FS, MEC_Assert);
-    }
-
-    do {
-        std::string filename = std::string(ffd.cFileName);
-        if( filename != "." && filename != ".." ) {
-            std::string filename_utf8 = encoding::ConvertMBStoUTF8(filename);
-            std::string newcopydir_utf8;
-            if( bhasseparator ) {
-                newcopydir_utf8 = copydir_utf8 + filename_utf8;
-            }
-            else {
-                newcopydir_utf8 = str(boost::format("%s%c%s")%copydir_utf8%s_filesep%filename_utf8);
-            }
-            std::string newuri = str(boost::format("%s/%s")%uri%EscapeString(filename_utf8));
-
-            if( ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) {
-                _UploadDirectoryToController_UTF8(newcopydir_utf8, newuri);
-            }
-            else if( ffd.dwFileAttributes == 0 || ffd.dwFileAttributes == FILE_ATTRIBUTE_READONLY || ffd.dwFileAttributes == FILE_ATTRIBUTE_NORMAL || ffd.dwFileAttributes == FILE_ATTRIBUTE_ARCHIVE ) {
-                _UploadFileToController_UTF8(newcopydir_utf8, newuri);
-            }
-        }
-    } while(FindNextFileA(hFind,&ffd) != 0);
-
-    DWORD err = GetLastError();
-    FindClose(hFind);
-    if( err != ERROR_NO_MORE_FILES ) {
-        throw MUJIN_EXCEPTION_FORMAT("system error 0x%x when recursing through %s", err%sCopyDir_FS, MEC_HTTPServer);
-    }
-
-#else
-    boost::filesystem::path bfpcopydir(copydir_utf8);
-    for(boost::filesystem::directory_iterator itdir(bfpcopydir); itdir != boost::filesystem::directory_iterator(); ++itdir) {
-#if defined(BOOST_FILESYSTEM_VERSION) && BOOST_FILESYSTEM_VERSION >= 3
-        std::string dirfilename = encoding::ConvertFileSystemEncodingToUTF8(itdir->path().filename().string());
-#else
-        std::string dirfilename = encoding::ConvertFileSystemEncodingToUTF8(itdir->path().filename());
-#endif
-        std::string newuri = str(boost::format("%s/%s")%uri%EscapeString(dirfilename));
-        if( boost::filesystem::is_directory(itdir->status()) ) {
-            _UploadDirectoryToController_UTF8(itdir->path().string(), newuri);
-        }
-        else if( boost::filesystem::is_regular_file(itdir->status()) ) {
-            _UploadFileToController_UTF8(itdir->path().string(), newuri);
-        }
-    }
-#endif // defined(_WIN32) || defined(_WIN64)
-}
-
-void ControllerClientImpl::_UploadDirectoryToController_UTF16(const std::wstring& copydir_utf16, const std::string& rawuri)
-{
-    BOOST_ASSERT(rawuri.size()>0 && copydir_utf16.size()>0);
-
-    // if there's a trailing slash, have to get rid of it
-    std::string uri;
-    if( rawuri.at(rawuri.size()-1) == '/' ) {
-        if( copydir_utf16.at(copydir_utf16.size()-1) != s_wfilesep ) {
-            // append the copydir_utf16 name to rawuri
-            size_t nBaseFilenameStartIndex = copydir_utf16.find_last_of(s_wfilesep);
-            if( nBaseFilenameStartIndex == std::string::npos ) {
-                // there's no path?
-                nBaseFilenameStartIndex = 0;
-            }
-            else {
-                nBaseFilenameStartIndex++;
-            }
-            std::string name_utf8;
-            utf8::utf16to8(copydir_utf16.begin()+nBaseFilenameStartIndex, copydir_utf16.end(), std::back_inserter(name_utf8));
-            uri = rawuri + EscapeString(name_utf8);
-        }
-        else {
-            // copydir also ends in a fileseparator, so remove the file separator from rawuri
-            uri = rawuri.substr(0, rawuri.size()-1);
-        }
-    }
-    else {
-        if (copydir_utf16.at(copydir_utf16.size()-1) == s_wfilesep) {
-            throw MUJIN_EXCEPTION_FORMAT("copydir '%s' cannot end in slash '%s'", encoding::ConvertUTF16ToFileSystemEncoding(copydir_utf16)%s_filesep, MEC_InvalidArguments);
-        }
-        uri = rawuri;
-    }
-
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
-
-    {
-        // make sure the directory is created
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_CUSTOMREQUEST, NULL, "MKCOL");
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
-        CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, uri.c_str());
-        CURL_PERFORM(_curl);
-        long http_code = 0;
-        CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-        if( http_code != 201 && http_code != 301 ) {
-            throw MUJIN_EXCEPTION_FORMAT("HTTP MKCOL failed for %s with HTTP status %d: %s", uri%http_code%_errormessage, MEC_HTTPServer);
-        }
-    }
-
-    std::wstring sCopyDir_FS;
-    // remove the fileseparator if it exists
-    if( copydir_utf16.size() > 0 && copydir_utf16.at(copydir_utf16.size()-1) == s_wfilesep ) {
-        sCopyDir_FS = copydir_utf16.substr(0,copydir_utf16.size()-1);
-    }
-    else {
-        sCopyDir_FS = copydir_utf16;
-    }
-    std::stringstream ss;
-    ss << "uploading " << encoding::ConvertUTF16ToFileSystemEncoding(copydir_utf16) << " -> " << uri;
-    MUJIN_LOG_INFO(ss.str());
-
-#if defined(_WIN32) || defined(_WIN64)
-    WIN32_FIND_DATAW ffd;
-    std::wstring searchstr = sCopyDir_FS + std::wstring(L"\\*");
-    HANDLE hFind = FindFirstFileW(searchstr.c_str(), &ffd);
-    if (hFind == INVALID_HANDLE_VALUE)  {
-        throw MUJIN_EXCEPTION_FORMAT("could not retrieve file data for %s", encoding::ConvertUTF16ToFileSystemEncoding(copydir_utf16), MEC_Assert);
-    }
-
-    do {
-        std::wstring filename = std::wstring(ffd.cFileName);
-        if( filename != L"." && filename != L".." ) {
-            std::string filename_utf8;
-            utf8::utf16to8(filename.begin(), filename.end(), std::back_inserter(filename_utf8));
-            std::wstring newcopydir = str(boost::wformat(L"%s\\%s")%copydir_utf16%filename);
-            std::string newuri = str(boost::format("%s/%s")%uri%EscapeString(filename_utf8));
-
-            if( ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) {
-                _UploadDirectoryToController_UTF16(newcopydir, newuri);
-            }
-            else if( ffd.dwFileAttributes == 0 || ffd.dwFileAttributes == FILE_ATTRIBUTE_READONLY || ffd.dwFileAttributes == FILE_ATTRIBUTE_NORMAL || ffd.dwFileAttributes == FILE_ATTRIBUTE_ARCHIVE ) {
-                _UploadFileToController_UTF16(newcopydir, newuri);
-            }
-        }
-    } while(FindNextFileW(hFind,&ffd) != 0);
-
-    DWORD err = GetLastError();
-    FindClose(hFind);
-    if( err !=  ERROR_NO_MORE_FILES ) {
-        throw MUJIN_EXCEPTION_FORMAT("system error 0x%x when recursing through %s", err%encoding::ConvertUTF16ToFileSystemEncoding(copydir_utf16), MEC_HTTPServer);
-    }
-
-#elif defined(BOOST_FILESYSTEM_VERSION) && BOOST_FILESYSTEM_VERSION >= 3
-    boost::filesystem::path bfpcopydir(copydir_utf16);
-    for(boost::filesystem::directory_iterator itdir(bfpcopydir); itdir != boost::filesystem::directory_iterator(); ++itdir) {
-        std::wstring dirfilename_utf16 = itdir->path().filename().wstring();
-        std::string dirfilename;
-        utf8::utf16to8(dirfilename_utf16.begin(), dirfilename_utf16.end(), std::back_inserter(dirfilename));
-        std::string newuri = str(boost::format("%s/%s")%uri%EscapeString(dirfilename));
-        if( boost::filesystem::is_directory(itdir->status()) ) {
-            _UploadDirectoryToController_UTF16(itdir->path().wstring(), newuri);
-        }
-        else if( boost::filesystem::is_regular_file(itdir->status()) ) {
-            _UploadFileToController_UTF16(itdir->path().wstring(), newuri);
-        }
-    }
-#else
-    // boost filesystem v2
-    boost::filesystem::wpath bfpcopydir(copydir_utf16);
-    for(boost::filesystem::wdirectory_iterator itdir(bfpcopydir); itdir != boost::filesystem::wdirectory_iterator(); ++itdir) {
-        std::wstring dirfilename_utf16 = itdir->path().filename();
-        std::string dirfilename;
-        utf8::utf16to8(dirfilename_utf16.begin(), dirfilename_utf16.end(), std::back_inserter(dirfilename));
-        std::string newuri = str(boost::format("%s/%s")%uri%EscapeString(dirfilename));
-        if( boost::filesystem::is_directory(itdir->status()) ) {
-            _UploadDirectoryToController_UTF16(itdir->path().string(), newuri);
-        }
-        else if( boost::filesystem::is_regular_file(itdir->status()) ) {
-            _UploadFileToController_UTF16(itdir->path().string(), newuri);
-        }
-    }
-#endif // defined(_WIN32) || defined(_WIN64)
-}
-
-void ControllerClientImpl::_UploadFileToController_UTF8(const std::string& filename, const std::string& uri)
-{
-    // the dest filename of the upload is determined by stripping the leading _basewebdavuri
-    if( uri.size() < _basewebdavuri.size() || uri.substr(0,_basewebdavuri.size()) != _basewebdavuri ) {
-        throw MUJIN_EXCEPTION_FORMAT("trying to upload a file outside of the webdav endpoint is not allowed: %s", uri, MEC_HTTPServer);
-    }
-    std::string filenameoncontroller = uri.substr(_basewebdavuri.size());
-
-    std::string sFilename_FS = encoding::ConvertUTF8ToFileSystemEncoding(filename);
-    std::ifstream fin(sFilename_FS.c_str(), std::ios::in | std::ios::binary);
-    if(!fin.good()) {
-        throw MUJIN_EXCEPTION_FORMAT("failed to open filename %s for uploading", sFilename_FS, MEC_InvalidArguments);
-    }
-
-    MUJIN_LOG_DEBUG(str(boost::format("upload %s")%uri))
-    _UploadFileToControllerViaForm(fin, filenameoncontroller, _baseuri + "fileupload");
-}
-
-void ControllerClientImpl::_UploadFileToController_UTF16(const std::wstring& filename, const std::string& uri)
-{
-    // the dest filename of the upload is determined by stripping the leading _basewebdavuri
-    if( uri.size() < _basewebdavuri.size() || uri.substr(0,_basewebdavuri.size()) != _basewebdavuri ) {
-        throw MUJIN_EXCEPTION_FORMAT("trying to upload a file outside of the webdav endpoint is not allowed: %s", uri, MEC_HTTPServer);
-    }
-    std::string filenameoncontroller = uri.substr(_basewebdavuri.size());
-
-    std::string sFilename_FS = encoding::ConvertUTF16ToFileSystemEncoding(filename);
-    std::vector<unsigned char>content;
-    std::ifstream fin(sFilename_FS.c_str(), std::ios::in | std::ios::binary);
-    if(!fin.good()) {
-        throw MUJIN_EXCEPTION_FORMAT("failed to open filename %s for uploading", sFilename_FS, MEC_InvalidArguments);
-    }
-
-    MUJIN_LOG_DEBUG(str(boost::format("upload %s")%uri))
-    _UploadFileToControllerViaForm(fin, filenameoncontroller, _baseuri + "fileupload");
-}
-
-void ControllerClientImpl::_UploadFileToControllerViaForm(std::istream& inputStream, const std::string& filename, const std::string& endpoint, double timeout)
-{
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, endpoint.c_str());
-    _buffer.clear();
-    _buffer.str("");
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
-    //timeout is default to 0 (never)
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
-
-    std::streampos originalPos = inputStream.tellg();
-    inputStream.seekg(0, std::ios::end);
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to seek inputStream to get the length", MEC_InvalidArguments);
-    }
-    std::streampos contentLength = inputStream.tellg() - originalPos;
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to tell the length of inputStream", MEC_InvalidArguments);
-    }
-    inputStream.seekg(originalPos, std::ios::beg);
-    if(inputStream.fail()) {
-        throw MUJIN_EXCEPTION_FORMAT0("failed to rewind inputStream", MEC_InvalidArguments);
-    }
-
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_READFUNCTION, NULL, _ReadIStreamCallback);
-    // prepare form
-    struct curl_httppost *formpost = NULL;
-    struct curl_httppost *lastptr = NULL;
-    CURL_FORM_RELEASER(formpost);
-    curl_formadd(&formpost, &lastptr,
-                 CURLFORM_COPYNAME, "files[]",
-                 CURLFORM_FILENAME, filename.empty() ? "unused" : filename.c_str(),
-                 CURLFORM_STREAM, &inputStream,
-#if !CURL_AT_LEAST_VERSION(7,46,0)
-                 // According to curl/lib/formdata.c, CURLFORM_CONTENTSLENGTH argument type is long.
-                 // Also, as va_list is used in curl_formadd, the bit length needs to match exactly.
-                 // streampos can be directly converted to streamoff, but it does not correspond on 32bit machines.
-                 CURLFORM_CONTENTSLENGTH, (long)contentLength,
-#else
-                 // Actually we should use CURLFORM_CONTENTLEN, whose argument type is curl_off_t, which is 64bit.
-                 // However, it was added in curl 7.46 and cannot be used in official Windows build.
-                 CURLFORM_CONTENTLEN, (curl_off_t)contentLength,
-#endif
-                 CURLFORM_END);
-    if(!filename.empty()) {
-        curl_formadd(&formpost, &lastptr,
-                     CURLFORM_COPYNAME, "filename",
-                     CURLFORM_COPYCONTENTS, filename.c_str(),
-                     CURLFORM_END);
-    }
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPPOST, NULL, formpost);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersmultipartformdata);
-    CURL_PERFORM(_curl);
-    // get http status
-    long http_code = 0;
-    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-    // 204 is when it overwrites the file?
-    if( http_code != 200 ) {
-        throw MUJIN_EXCEPTION_FORMAT("upload of %s to %s failed with HTTP status %s", filename%endpoint%http_code, MEC_HTTPServer);
-    }
-}
-
-void ControllerClientImpl::_UploadDataToControllerViaForm(const void* data, size_t size, const std::string& filename, const std::string& endpoint, double timeout)
-{
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, endpoint.c_str());
-    _buffer.clear();
-    _buffer.str("");
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEFUNCTION, NULL, _WriteStringStreamCallback);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_WRITEDATA, NULL, &_buffer);
-    //timeout is default to 0 (never)
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
-
-    // prepare form
-    struct curl_httppost *formpost = NULL;
-    struct curl_httppost *lastptr = NULL;
-    CURL_FORM_RELEASER(formpost);
-    curl_formadd(&formpost, &lastptr,
-                 CURLFORM_PTRNAME, "files[]",
-                 CURLFORM_BUFFER, filename.empty() ? "unused" : filename.c_str(),
-                 CURLFORM_BUFFERPTR, data,
-                 CURLFORM_END);
-    if(!filename.empty()) {
-        curl_formadd(&formpost, &lastptr,
-                     CURLFORM_PTRNAME, "filename",
-                     CURLFORM_PTRCONTENTS, filename.c_str(),
-                     CURLFORM_END);
-    }
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPPOST, NULL, formpost);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersmultipartformdata);
-    CURL_PERFORM(_curl);
-    // get http status
-    long http_code = 0;
-    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-    // 204 is when it overwrites the file?
-    if( http_code != 200 ) {
-        throw MUJIN_EXCEPTION_FORMAT("upload of %s to %s failed with HTTP status %s", filename%endpoint%http_code, MEC_HTTPServer);
-    }
-}
-
-void ControllerClientImpl::_DeleteFileOnController(const std::string& desturi)
-{
-    MUJIN_LOG_DEBUG(str(boost::format("delete %s")%desturi))
-
-    // the dest filename of the upload is determined by stripping the leading _basewebdavuri
-    if( desturi.size() < _basewebdavuri.size() || desturi.substr(0,_basewebdavuri.size()) != _basewebdavuri ) {
-        throw MUJIN_EXCEPTION_FORMAT("trying to upload a file outside of the webdav endpoint is not allowed: %s", desturi, MEC_HTTPServer);
-    }
-    std::string filename = desturi.substr(_basewebdavuri.size());
-
-    rapidjson::Document pt(rapidjson::kObjectType);
-    _CallPost(_baseuri+"file/delete/?filename="+filename, "", pt, 200, 5.0);
-}
-
-void ControllerClientImpl::_DeleteDirectoryOnController(const std::string& desturi)
-{
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_CUSTOMREQUEST, NULL, "DELETE");
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_HTTPHEADER, NULL, _httpheadersjson);
-    CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_URL, NULL, desturi.c_str());
-    CURL_PERFORM(_curl);
-    long http_code = 0;
-    CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
-    MUJIN_LOG_INFO("response code: " << http_code);
-}
-
-size_t ControllerClientImpl::_ReadUploadCallback(void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    // in real-world cases, this would probably get this data differently as this fread() stuff is exactly what the library already would do by default internally
-    size_t nread = fread(ptr, size, nmemb, (FILE*)stream);
-    //fprintf(stderr, "*** We read %" CURL_FORMAT_CURL_OFF_T " bytes from file\n", nread);
-    return nread;
-}
-
-size_t ControllerClientImpl::_ReadInMemoryUploadCallback(void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    std::pair<std::vector<unsigned char>::const_iterator, size_t>* pstreamdata = static_cast<std::pair<std::vector<unsigned char>::const_iterator, size_t>*>(stream);
-    size_t nBytesToRead = size*nmemb;
-    if( nBytesToRead > pstreamdata->second ) {
-        nBytesToRead = pstreamdata->second;
-    }
-    if( nBytesToRead > 0 ) {
-        std::copy(pstreamdata->first, pstreamdata->first+nBytesToRead, static_cast<unsigned char*>(ptr));
-        pstreamdata->first += nBytesToRead;
-        pstreamdata->second -= nBytesToRead;
-    }
-    return nBytesToRead;
-}
-
-void ControllerClientImpl::GetDebugInfos(std::vector<DebugResourcePtr>& debuginfos, double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    CallGet(str(boost::format("debug/?format=json&limit=0")), pt, 200, timeout);
-    rapidjson::Value& objects = pt["objects"];
-
-    debuginfos.resize(objects.Size());
-    size_t iobj = 0;
-    for (rapidjson::Document::ValueIterator it = objects.Begin(); it != objects.End(); ++it) {
-        DebugResourcePtr debuginfo(new DebugResource(shared_from_this(), GetJsonValueByKey<std::string>(*it, "pk")));
-
-        //LoadJsonValueByKey(*it, "datemodified", debuginfo->datemodified);
-        LoadJsonValueByKey(*it, "description", debuginfo->description);
-        //LoadJsonValueByKey(*it, "downloadUri", debuginfo->downloadUri);
-        LoadJsonValueByKey(*it, "name", debuginfo->name);
-        //LoadJsonValueByKey(*it, "resource_uri", debuginfo->resource_uri);
-        LoadJsonValueByKey(*it, "size", debuginfo->size);
-
-        debuginfos.at(iobj++) = debuginfo;
-    }
-}
-
-void ControllerClientImpl::ListFilesInController(std::vector<FileEntry>& fileentries, const std::string &dirname, double timeout)
-{
-    rapidjson::Document pt(rapidjson::kObjectType);
-    _CallGet(_baseuri+"file/list/?dirname="+dirname, pt, 200, timeout);
-    fileentries.resize(pt.MemberCount());
-    size_t iobj = 0;
-    for (rapidjson::Document::MemberIterator it = pt.MemberBegin(); it != pt.MemberEnd(); ++it) {
-        FileEntry &fileentry = fileentries.at(iobj);
-
-        fileentry.filename = it->name.GetString();
-        LoadJsonValueByKey(it->value, "modified", fileentry.modified);
-        LoadJsonValueByKey(it->value, "size", fileentry.size);
-
-        iobj++;
     }
 }
 

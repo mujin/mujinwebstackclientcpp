@@ -18,7 +18,10 @@
 #define MUJIN_CONTROLLERCLIENT_COMMON_H
 
 #define WIN32_LEAN_AND_MEAN
-#include <mujincontrollerclient/mujincontrollerclient.h>
+
+#include <sstream>
+#include <fstream>
+#include <iostream>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/lexical_cast.hpp>
@@ -28,11 +31,9 @@
 #include <boost/function.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-
-#include <sstream>
-#include <fstream>
-#include <iostream>
 #include <curl/curl.h>
+
+#include <mujincontrollerclient/mujinexceptions.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
