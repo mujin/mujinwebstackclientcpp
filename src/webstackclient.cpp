@@ -17,6 +17,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/make_shared.hpp>
 #include <strstream>
 
 #include "common.h"
@@ -37,6 +38,8 @@ MUJIN_LOGGER("mujin.webstackcpp");
 namespace mujinclient {
 
 using namespace mujinjson;
+
+namespace {
 
 template <typename T>
 std::wstring ParseWincapsWCNPath(const T& sourcefilename, const boost::function<std::string(const T&)>& ConvertToFileSystemEncoding)
@@ -91,6 +94,8 @@ std::wstring ParseWincapsWCNPath(const T& sourcefilename, const boost::function<
 
     return strWCNPath;
 }
+
+}  // end namespace
 
 WebstackClient::WebstackClient(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
 {
@@ -1036,6 +1041,10 @@ void WebstackClient::_EnsureWebDAVDirectories(const std::string& relativeuri, do
             throw MUJIN_EXCEPTION_FORMAT("HTTP MKCOL failed with HTTP status %d: %s", http_code%_errormessage, MEC_HTTPServer);
         }
     }
+}
+
+MUJINCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0) {
+    return boost::make_shared<WebstackClient>(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout);
 }
 
 } // end namespace mujinclient
