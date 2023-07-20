@@ -1043,7 +1043,8 @@ void WebstackClient::_EnsureWebDAVDirectories(const std::string& relativeuri, do
     }
 }
 
-MUJINCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0) {
+MUJINCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
+{
     return boost::make_shared<WebstackClient>(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout);
 }
 
