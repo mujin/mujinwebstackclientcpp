@@ -6,6 +6,4 @@ We also have a [python version](https://github.com/mujin/mujinwebstackclientpy).
 
 ## Building?
 
-You can try to `cmake`, but as of this commit, it's probably difficult since there's some dependencies that aren't on github.
-
-We'll get there.
+Assuming you have rapid json and curl, you can simply `cmake . && make` in this directory.

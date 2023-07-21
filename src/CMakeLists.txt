@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${CURL_INCLUDE_DIRS} ${LOG4CXX_INCLUDEDIR} ${MujinControllerClient_INCLUDE_DIRS})
+include_directories(${CURL_INCLUDE_DIRS} ${LOG4CXX_INCLUDEDIR})
 link_directories(${MUJINWEBSTACKCLIENT_LINK_DIRS})
 
 set(SOURCE_FILES
   boost_assertion_failed.cpp
+  mujinjson.cpp
+  mujindefinitions.cpp
   utf8.h
   common.h
   common.cpp

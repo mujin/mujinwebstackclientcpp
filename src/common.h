@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 /** \file common.h
-    \brief  Private common definitions for mujin controller client.
+    \brief  Private common definitions for mujin webstack client.
  */
-#ifndef MUJIN_CONTROLLERCLIENT_COMMON_H
-#define MUJIN_CONTROLLERCLIENT_COMMON_H
+#ifndef MUJIN_WEBSTACKCLIENT_COMMON_H
+#define MUJIN_WEBSTACKCLIENT_COMMON_H
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -33,7 +33,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <curl/curl.h>
 
-#include <mujincontrollerclient/mujinexceptions.h>
+#include <mujinwebstackclientcpp/mujinexceptions.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -187,7 +187,6 @@ inline static unsigned long long GetNanoPerformanceTime()
 #endif
 #endif
 
-#define GETCONTROLLERIMPL() ControllerClientImplPtr controller = boost::dynamic_pointer_cast<ControllerClientImpl>(GetController());
 #define CHECKCURLCODE(code, msg) if (code != CURLE_OK) { \
         throw MujinException(boost::str(boost::format("[%s:%d] curl function %s with error '%s': %s")%(__PRETTY_FUNCTION__)%(__LINE__)%(msg)%curl_easy_strerror(code)%_errormessage), MEC_HTTPClient); \
 }
@@ -201,18 +200,14 @@ inline static unsigned long long GetNanoPerformanceTime()
 }
 #endif
 
-#define MUJIN_EXCEPTION_FORMAT0(s, errorcode) mujinclient::MujinException(boost::str(boost::format("[%s:%d] " s)%(__PRETTY_FUNCTION__)%(__LINE__)),errorcode)
+#define MUJIN_EXCEPTION_FORMAT0(s, errorcode) mujinwebstackclient::MujinException(boost::str(boost::format("[%s:%d] " s)%(__PRETTY_FUNCTION__)%(__LINE__)),errorcode)
 
 /// adds the function name and line number to an exception
-#define MUJIN_EXCEPTION_FORMAT(s, args,errorcode) mujinclient::MujinException(boost::str(boost::format("[%s:%d] " s)%(__PRETTY_FUNCTION__)%(__LINE__)%args),errorcode)
+#define MUJIN_EXCEPTION_FORMAT(s, args,errorcode) mujinwebstackclient::MujinException(boost::str(boost::format("[%s:%d] " s)%(__PRETTY_FUNCTION__)%(__LINE__)%args),errorcode)
 
 BOOST_STATIC_ASSERT(sizeof(unsigned short) == 2); // need this for utf-16 reading
 
-namespace mujinclient {
-
-class BinPickingTaskZmqResource;
-typedef boost::shared_ptr<BinPickingTaskZmqResource> BinPickingTaskZmqResourcePtr;
-typedef boost::weak_ptr<BinPickingTaskZmqResource> BinPickingTaskZmqResourceWeakPtr;
+namespace mujinwebstackclient {
 
 class FileHandler
 {
@@ -234,7 +229,6 @@ public:
 };
 
 bool PairStringLengthCompare(const std::pair<std::string, std::string>&p0, const std::pair<std::string, std::string>&p1);
-std::string& SearchAndReplace(std::string& out, const std::string& in, const std::vector< std::pair<std::string, std::string> >&_pairs);
 
 namespace encoding {
 
@@ -362,6 +356,6 @@ const char s_filesep = '/';
 const wchar_t s_wfilesep = L'/';
 #endif
 
-} // end namespace mujinclient
+} // end namespace mujinwebstackclient
 
 #endif

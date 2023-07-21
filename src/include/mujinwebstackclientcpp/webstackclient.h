@@ -12,11 +12,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/** \file mujincontrollerclient.h
+/** \file mujinwebstackclient.h
     \brief  Defines the public headers of the MUJIN Controller Client
  */
-#ifndef MUJIN_CONTROLLERCLIENT_H
-#define MUJIN_CONTROLLERCLIENT_H
+#ifndef MUJIN_WEBSTACKCLIENT_H
+#define MUJIN_WEBSTACKCLIENT_H
 
 #ifdef _MSC_VER
 
@@ -32,9 +32,9 @@
 #endif
 
 #if defined(__GNUC__)
-#define MUJINCLIENT_DEPRECATED __attribute__((deprecated))
+#define MUJINWEBSTACKCLIENT_DEPRECATED __attribute__((deprecated))
 #else
-#define MUJINCLIENT_DEPRECATED
+#define MUJINWEBSTACKCLIENT_DEPRECATED
 #endif
 
 #include <cmath>
@@ -58,20 +58,15 @@
 #include <boost/thread/mutex.hpp>
 #include <curl/curl.h>
 
-#include <mujincontrollerclient/config.h>
-#include <mujincontrollerclient/mujinexceptions.h>
-#include <mujincontrollerclient/mujinjson.h>
-#include <mujincontrollerclient/mujindefinitions.h>
+#include <mujinwebstackclientcpp/config.h>
+#include <mujinwebstackclientcpp/mujinexceptions.h>
+#include <mujinwebstackclientcpp/mujinjson.h>
+#include <mujinwebstackclientcpp/mujindefinitions.h>
 
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 typedef mujin::Transform Transform;
-
-enum TaskResourceOptions
-{
-    TRO_EnableZMQ=1, ///< create a task resource with zeromq client
-};
 
 /// \brief (scene) file entry in mujin controller
 struct FileEntry
@@ -86,7 +81,7 @@ typedef double Real;
 /// \brief Creates on MUJIN Controller instance.
 ///
 /// Only one call can be made at a time. In order to make multiple calls simultaneously, create another instance.
-class MUJINCLIENT_API WebstackClient
+class MUJINWEBSTACKCLIENT_API WebstackClient
 {
 public:
     WebstackClient(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout);
@@ -367,12 +362,12 @@ typedef boost::weak_ptr<WebstackClient> WebstackClientWeakPtr;
     \param options １が指定されたら、クライアントがGETのみを呼び出し出来ます。それで初期化がもっと速くなれます。
     \param timeout set timeout in seconds for the initial login requests
  */
-MUJINCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
+MUJINWEBSTACKCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
 
-} // namespace mujinclient
+} // namespace mujinwebstackclient
 
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MAJOR>=0&&MUJINCLIENT_VERSION_MAJOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MINOR>=0&&MUJINCLIENT_VERSION_MINOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_PATCH>=0&&MUJINCLIENT_VERSION_PATCH<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MAJOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MAJOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MINOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MINOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_PATCH>=0&&MUJINWEBSTACKCLIENT_VERSION_PATCH<=255);
 
 #endif

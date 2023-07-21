@@ -13,42 +13,11 @@
 // limitations under the License.
 #include "common.h"
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 bool PairStringLengthCompare(const std::pair<std::string, std::string>&p0, const std::pair<std::string, std::string>&p1)
 {
     return p0.first.size() > p1.first.size();
-}
-
-std::string& SearchAndReplace(std::string& out, const std::string& in, const std::vector< std::pair<std::string, std::string> >&_pairs)
-{
-    BOOST_ASSERT(&out != &in);
-    std::vector< std::pair<std::string, std::string> >::const_iterator itp, itbestp;
-    for(itp = _pairs.begin(); itp != _pairs.end(); ++itp) {
-        BOOST_ASSERT(itp->first.size()>0);
-    }
-    std::vector< std::pair<std::string, std::string> > pairs = _pairs;
-    stable_sort(pairs.begin(),pairs.end(),PairStringLengthCompare);
-    out.resize(0);
-    size_t startindex = 0;
-    while(startindex < in.size()) {
-        size_t nextindex=std::string::npos;
-        for(itp = pairs.begin(); itp != pairs.end(); ++itp) {
-            size_t index = in.find(itp->first,startindex);
-            if((nextindex == std::string::npos)|| ((index != std::string::npos)&&(index < nextindex)) ) {
-                nextindex = index;
-                itbestp = itp;
-            }
-        }
-        if( nextindex == std::string::npos ) {
-            out += in.substr(startindex);
-            break;
-        }
-        out += in.substr(startindex,nextindex-startindex);
-        out += itbestp->second;
-        startindex = nextindex+itbestp->first.size();
-    }
-    return out;
 }
 
 namespace encoding {
@@ -113,11 +82,11 @@ void ConvertTimestampToFloat(const std::string& in,
         const std::size_t closingCurly = in.substr(timestampbegin, len).find("}");
         if (comma == std::string::npos && closingCurly == std::string::npos)
         {
-            throw mujinclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinclient::MEC_Failed);
+            throw mujinwebstackclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinwebstackclient::MEC_Failed);
         }
         const std::size_t timestampend = timestampbegin + (comma < closingCurly ? comma : closingCurly);
         if (timestampend == std::string::npos) {
-            throw mujinclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinclient::MEC_Failed);
+            throw mujinwebstackclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinwebstackclient::MEC_Failed);
         }
         const std::size_t period = in.substr(timestampbegin, len).find(".");
 
@@ -133,4 +102,4 @@ void ConvertTimestampToFloat(const std::string& in,
     }
 }
 
-} // namespace mujinclient
+} // namespace mujinwebstackclient

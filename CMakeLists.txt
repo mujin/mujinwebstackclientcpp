@@ -34,7 +34,7 @@ cmake_policy(SET CMP0002 NEW)
 # http://www.cmake.org/cmake/help/cmake-2.6.html#policy:CMP0003
 cmake_policy(SET CMP0003 NEW)
 
-option(OPT_SAMPLES "Build the samples" ON)
+option(OPT_SAMPLES "Build the samples" OFF)
 option(OPT_BUILD_TESTS "Build the tests" OFF)
 option(OPT_BUILD_STATIC "Build static libraries for the client" ON)
 option(OPT_LOG4CXX "Use log4cxx for logging" ON)
@@ -102,7 +102,7 @@ if( MSVC )
 
   check_include_file(stdint.h HAVE_STDINT_H)
   if( NOT HAVE_STDINT_H )
-    #install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/msvc_include/stdint.h DESTINATION include/mujinclient-${MUJINWEBSTACKCLIENT_VERSION_MAJOR}.${MUJINWEBSTACKCLIENT_VERSION_MINOR} COMPONENT ${COMPONENT_PREFIX}dev)
+    #install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/msvc_include/stdint.h DESTINATION include/mujinwebstackclient-${MUJINWEBSTACKCLIENT_VERSION_MAJOR}.${MUJINWEBSTACKCLIENT_VERSION_MINOR} COMPONENT ${COMPONENT_PREFIX}dev)
     #include_directories(${CMAKE_CURRENT_SOURCE_DIR}/msvc_include)
   endif()
   
@@ -137,8 +137,6 @@ endif()
 set(MUJINWEBSTACKCLIENT_LINK_DIRS)
 
 find_package(PkgConfig)
-# TODO(document/team#86): Remove this when (if?) client utilities are moved to controller common.
-find_package(MujinControllerClient 0.64.0 REQUIRED)
 set(MUJINWEBSTACKCLIENT_LOG4CXX 0)
 if (OPT_LOG4CXX)
   pkg_check_modules(LOG4CXX liblog4cxx)

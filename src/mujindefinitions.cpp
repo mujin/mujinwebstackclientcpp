@@ -1,6 +1,6 @@
 // -*- coding: utf-8 -*-
 // Copyright (C) 2012-2023 MUJIN Inc.
-#include <mujincontrollerclient/mujindefinitions.h>
+#include <mujinwebstackclientcpp/mujindefinitions.h>
 
 namespace mujin {
 

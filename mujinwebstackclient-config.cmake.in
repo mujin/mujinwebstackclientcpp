@@ -60,7 +60,7 @@ if( MSVC )
 endif()
 set( MujinWebstackClient_LINK_FLAGS "@MUJINWEBSTACKCLIENT_LOG4CXX_LIB_DIRS@" )
 set( MujinWebstackClient_LIBRARY_DIRS "${MujinWebstackClient_ROOT_DIR}/lib@LIB_SUFFIX@")
-set( MujinWebstackClient_LIBRARIES mujincontrollerclient${MujinWebstackClient_LIBRARY_SUFFIX} @LOG4CXX_LIBRARIES@)
+set( MujinWebstackClient_LIBRARIES mujinwebstackclient${MujinWebstackClient_LIBRARY_SUFFIX} @LOG4CXX_LIBRARIES@)
 
 set( MujinWebstackClient_Boost_VERSION "@Boost_MAJOR_VERSION@.@Boost_MINOR_VERSION@")
 
