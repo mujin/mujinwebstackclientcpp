@@ -6,7 +6,7 @@
 #define __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__
 
 #include <mujincontrollercommon/config.h>
-#include <mujinwebstackclient/webstackclient.h>
+#include <mujinwebstackclientcpp/webstackclient.h>
 
 namespace mujincontrollercommon {
 
