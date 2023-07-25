@@ -67,7 +67,10 @@ add_definitions("-DBOOST_SPIRIT_THREADSAFE") # for json parsing
 
 # have to include before boost since the boost headers can be located in a previous installed version of this library
 set(MUJINWEBSTACKCLIENT_INCLUDE_LOCAL_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+  ${CMAKE_CURRENT_BINARY_DIR}/include
+) # have to do this before every other include!
 include_directories(${MUJINWEBSTACKCLIENT_INCLUDE_LOCAL_DIRS})
 
 if( MSVC )
@@ -316,8 +319,9 @@ else()
   message(WARNING "compiling without libzmq library")
 endif()
 
-file(GLOB mujin_header_files ${CMAKE_CURRENT_SOURCE_DIR}/include/mujinwebstackclientcpp/*.h ${CMAKE_CURRENT_SOURCE_DIR}/include/mujinwebstackclientcpp/*.hpp)
-install(FILES ${mujin_header_files} ${CMAKE_CURRENT_BINARY_DIR}/include/mujinwebstackclientcpp/config.h DESTINATION include/mujinwebstackclientcpp)
+file(GLOB mujin_header_files ${CMAKE_CURRENT_SOURCE_DIR}/src/include/mujinwebstackclientcpp/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/include/mujinwebstackclientcpp/*.hpp)
+install(FILES ${mujin_header_files} DESTINATION include/mujinwebstackclientcpp)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mujinwebstackclientcpp/config.h DESTINATION include/mujinwebstackclientcpp)
 
 macro(build_sample name)
   include_directories(${LOG4CXX_INCLUDEDIR} ${libzmq_INCLUDE_DIRS})
