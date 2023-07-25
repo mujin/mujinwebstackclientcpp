@@ -6,7 +6,7 @@
 #define __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__
 
 #include <mujincontrollercommon/config.h>
-#include <mujincontrollerclient/mujincontrollerclient.h>
+#include <mujinwebstackclient/webstackclient.h>
 
 namespace mujincontrollercommon {
 
@@ -20,7 +20,7 @@ MUJINCONTROLLERCOMMON_API bool IsWebstackLocal(const char* url);
 MUJINCONTROLLERCOMMON_API const char* GetUnixEndpointForLocalWebstack(const char* url);
 
 /// \brief Transparently diverge to private webstack if url is localhost
-MUJINCONTROLLERCOMMON_API mujinclient::ControllerClientPtr CreateWebstackClient(
+MUJINCONTROLLERCOMMON_API mujinwebstackclient::WebstackClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
     const std::string& url,
     const std::string& proxyserverport = std::string(),
@@ -29,5 +29,10 @@ MUJINCONTROLLERCOMMON_API mujinclient::ControllerClientPtr CreateWebstackClient(
     double timeout = 3.0);
 
 } // namespace mujincontrollercommon
+
+namespace mujinclient {
+// TODO(document/team#86): remove this once all call sites are migrated.
+typedef mujinwebstackclient::WebstackClientPtr ControllerClientPtr;
+}
 
 #endif // __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__

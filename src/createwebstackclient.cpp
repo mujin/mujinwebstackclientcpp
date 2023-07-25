@@ -86,7 +86,7 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
 }
 
 /// \brief Transparently diverge to private webstack if url is localhost
-mujinclient::ControllerClientPtr CreateWebstackClient(
+mujinwebstackclient::WebstackClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
     const std::string& url,
     const std::string& proxyserverport,
@@ -94,7 +94,7 @@ mujinclient::ControllerClientPtr CreateWebstackClient(
     int options,
     double timeout)
 {
-    mujinclient::ControllerClientPtr pClient = mujinclient::CreateControllerClient(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout);
+    mujinwebstackclient::WebstackClientPtr pClient = mujinwebstackclient::CreateWebstackClient(usernamepassword, url, proxyserverport, proxyuserpw, options, timeout);
     std::string unixendpoint = GetUnixEndpointForLocalWebstack(url.c_str());
     if (!unixendpoint.empty()) {
         pClient->SetUnixEndpoint(unixendpoint);
