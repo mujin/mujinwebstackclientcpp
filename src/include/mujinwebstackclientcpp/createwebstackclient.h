@@ -5,10 +5,10 @@
 #ifndef __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__
 #define __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__
 
-#include <mujincontrollercommon/config.h>
+#include <mujinwebstackclientcpp/config.h>
 #include <mujinwebstackclientcpp/webstackclient.h>
 
-namespace mujincontrollercommon {
+namespace mujinwebstackclient {
 
 /// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
 MUJINCONTROLLERCOMMON_API bool IsHostnameLocal(const char* hostname, ssize_t len = -1);
@@ -20,7 +20,7 @@ MUJINCONTROLLERCOMMON_API bool IsWebstackLocal(const char* url);
 MUJINCONTROLLERCOMMON_API const char* GetUnixEndpointForLocalWebstack(const char* url);
 
 /// \brief Transparently diverge to private webstack if url is localhost
-MUJINCONTROLLERCOMMON_API mujinwebstackclient::WebstackClientPtr CreateWebstackClient(
+MUJINCONTROLLERCOMMON_API WebstackClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
     const std::string& url,
     const std::string& proxyserverport = std::string(),
