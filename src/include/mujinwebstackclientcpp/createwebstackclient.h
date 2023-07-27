@@ -11,16 +11,16 @@
 namespace mujinwebstackclient {
 
 /// \brief determine if hostname is local, if len is not given, then use strlen to determine string length
-MUJINCONTROLLERCOMMON_API bool IsHostnameLocal(const char* hostname, ssize_t len = -1);
+MUJINWEBSTACKCLIENT_API bool IsHostnameLocal(const char* hostname, ssize_t len = -1);
 
 /// \brief determine if the url is pointing to local webstack
-MUJINCONTROLLERCOMMON_API bool IsWebstackLocal(const char* url);
+MUJINWEBSTACKCLIENT_API bool IsWebstackLocal(const char* url);
 
 /// \brief determine the unix endpoint if webstack is local
-MUJINCONTROLLERCOMMON_API const char* GetUnixEndpointForLocalWebstack(const char* url);
+MUJINWEBSTACKCLIENT_API const char* GetUnixEndpointForLocalWebstack(const char* url);
 
 /// \brief Transparently diverge to private webstack if url is localhost
-MUJINCONTROLLERCOMMON_API WebstackClientPtr CreateWebstackClient(
+MUJINWEBSTACKCLIENT_API WebstackClientPtr CreateWebstackClient(
     const std::string& usernamepassword,
     const std::string& url,
     const std::string& proxyserverport = std::string(),
@@ -28,11 +28,6 @@ MUJINCONTROLLERCOMMON_API WebstackClientPtr CreateWebstackClient(
     int options = 0,
     double timeout = 3.0);
 
-} // namespace mujincontrollercommon
-
-namespace mujinclient {
-// TODO(document/team#86): remove this once all call sites are migrated.
-typedef mujinwebstackclient::WebstackClientPtr ControllerClientPtr;
-}
+} // namespace mujinwebstackclient
 
 #endif // __MUJIN_CONTROLLERCOMMON_CREATEWEBSTACKCLIENT__

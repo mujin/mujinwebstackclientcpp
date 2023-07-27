@@ -61,12 +61,10 @@
 #include <mujinwebstackclientcpp/config.h>
 #include <mujinwebstackclientcpp/mujinexceptions.h>
 #include <mujinwebstackclientcpp/mujinjson.h>
-#include <mujinwebstackclientcpp/mujindefinitions.h>
+//#include <mujinwebstackclientcpp/mujindefinitions.h>
 
 
 namespace mujinwebstackclient {
-
-typedef mujin::Transform Transform;
 
 /// \brief (scene) file entry in mujin controller
 struct FileEntry
@@ -106,7 +104,7 @@ public:
         \param options １が指定されたら、クライアントがGETのみを呼び出し出来ます。それで初期化がもっと速くなれます。
         \param timeout set timeout in seconds for the initial login requests
     */
-    MUJINWEBSTACKCLIENT_API static WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
+    MUJINWEBSTACKCLIENT_API static boost::shared_ptr<WebstackClient> CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
 
     /// \brief sets the character encoding for all strings that are being input and output from the resources
     ///

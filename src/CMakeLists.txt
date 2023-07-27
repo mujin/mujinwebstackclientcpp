@@ -17,8 +17,8 @@ link_directories(${MUJINWEBSTACKCLIENT_LINK_DIRS})
 
 set(SOURCE_FILES
   boost_assertion_failed.cpp
+  createwebstackclient.cpp
   mujinjson.cpp
-  mujindefinitions.cpp
   utf8.h
   common.h
   common.cpp

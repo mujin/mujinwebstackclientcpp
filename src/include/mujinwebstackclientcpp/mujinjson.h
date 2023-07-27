@@ -14,8 +14,8 @@
 /** \file mujinjson.h
     \brief Wrapper for rapidjson.
  */
-#ifndef MUJIN_CONTROLLERCLIENT_JSON_H
-#define MUJIN_CONTROLLERCLIENT_JSON_H
+#ifndef MUJIN_WEBSTACK_JSON_H
+#define MUJIN_WEBSTACK_JSON_H
 
 #include <array>
 #include <boost/shared_ptr.hpp>
@@ -39,17 +39,17 @@
 
 #include <mujinwebstackclientcpp/config.h>
 
-#ifndef MUJINJSON_LOAD_REQUIRED_JSON_VALUE_BY_KEY
-#define MUJINJSON_LOAD_REQUIRED_JSON_VALUE_BY_KEY(rValue, key, param) \
+#ifndef MUJINJSONWEBSTACK_LOAD_REQUIRED_JSON_VALUE_BY_KEY
+#define MUJINJSONWEBSTACK_LOAD_REQUIRED_JSON_VALUE_BY_KEY(rValue, key, param) \
     { \
-        if (!(mujinjson::LoadJsonValueByKey(rValue, key, param))) \
+        if (!mujinjsonwebstack::LoadJsonValueByKey(rValue, key, param))) \
         { \
-            throw mujinjson::MujinJSONException(boost::str(boost::format(("[%s, %u] assert(mujinjson::LoadJsonValueByKey(%s, %s, %s))"))%__FILE__%__LINE__%# rValue%key%# param)); \
+            throw mujinjsonwebstack::MujinJSONException(boost::str(boost::format(("[%s, %u] assertmujinjsonwebstack::LoadJsonValueByKey(%s, %s, %s))"))%__FILE__%__LINE__%# rValue%key%# param)); \
         } \
     }
-#endif // MUJINJSON_LOAD_REQUIRED_JSON_VALUE_BY_KEY
+#endif // MUJINJSONWEBSTACK_LOAD_REQUIRED_JSON_VALUE_BY_KEY
 
-namespace mujinjson {
+namespace mujinjsonwebstack {
 
 #ifndef MujinJSONException
 
@@ -68,7 +68,7 @@ inline const char* GetErrorCodeString(MujinJSONErrorCode error)
     return "";
 }
 
-/// \brief Exception that MujinJSON internal methods throw; the error codes are held in \ref MujinJSONErrorCode.
+/// \brief Exception thatmujinjsonwebstack internal methods throw; the error codes are held in \ref MujinJSONErrorCode.
 class MujinJSONException : public std::exception
 {
 public:
@@ -108,6 +108,8 @@ private:
     MujinJSONErrorCode _error;
 };
 
+#else
+using namespace mujinjson;
 #endif
 
 template<class T> inline std::string GetJsonString(const T& t);
@@ -906,6 +908,6 @@ inline bool UpdateJsonRecursively(rapidjson::Value& sourceValue, const rapidjson
     return hasChanged;
 }
 
-} // namespace mujinjson
+} // namespace mujinjsonwebstack
 
 #endif

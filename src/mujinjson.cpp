@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace mujinjson {
+namespace mujinjsonwebstack {
 
 template <class Container>
 void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buffer)
@@ -110,4 +110,4 @@ void __InternalParseJsonFile(rapidjson::Document& d, const char* filename)
     return ParseJsonFile(d, filename, buffer);
 }
 
-} // end namespace mujinjson
+} // end namespace mujinjsonwebstack

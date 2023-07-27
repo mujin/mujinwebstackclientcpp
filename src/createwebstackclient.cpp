@@ -1,5 +1,5 @@
 #include <mujinwebstackclientcpp/createwebstackclient.h>
-#include <mujinwebstackclientcpp/logging.h>
+#include "logging.h"
 
 MUJIN_LOGGER("mujin.mujinwebstackclientcpp.createwebstackclient");
 
@@ -116,7 +116,7 @@ const char* GetUnixEndpointForLocalWebstack(const char* url)
     if (IsWebstackLocal(url)) {
         const char* unixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
         if (unixendpoint != nullptr && unixendpoint[0] != '\0') {
-            MUJIN_LOG_DEBUG_FORMAT("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"", unixendpoint%url);
+            MUJIN_LOG_DEBUG(boost::str(boost::format("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"")%unixendpoint%url));
             return unixendpoint;
         }
     }

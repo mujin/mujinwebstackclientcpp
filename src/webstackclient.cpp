@@ -37,7 +37,7 @@ MUJIN_LOGGER("mujin.webstackcpp");
 
 namespace mujinwebstackclient {
 
-using namespace mujinjson;
+using namespace mujinjsonwebstack;
 
 namespace {
 
@@ -370,14 +370,14 @@ void WebstackClient::_ExecuteGraphQuery(const char* operationName, const char* q
 
     // parse response
     if (!rResultDoc.IsObject()) {
-        throw MUJIN_EXCEPTION_FORMAT("Execute graph query does not return valid response \"%s\", invalid response: %s", operationName%mujinjson::DumpJson(rResultDoc), MEC_HTTPServer);
+        throw MUJIN_EXCEPTION_FORMAT("Execute graph query does not return valid response \"%s\", invalid response: %s", operationName%mujinjsonwebstack::DumpJson(rResultDoc), MEC_HTTPServer);
     }
 
     if (checkForErrors) {
         // look for errors in response
         const rapidjson::Value::ConstMemberIterator itErrors = rResultDoc.FindMember("errors");
         if (itErrors != rResultDoc.MemberEnd() && itErrors->value.IsArray() && itErrors->value.Size() > 0) {
-            MUJIN_LOG_VERBOSE(str(boost::format("graph query has errors \"%s\": %s")%operationName%mujinjson::DumpJson(rResultDoc)));
+            MUJIN_LOG_VERBOSE(str(boost::format("graph query has errors \"%s\": %s")%operationName%mujinjsonwebstack::DumpJson(rResultDoc)));
             for (rapidjson::Value::ConstValueIterator itError = itErrors->value.Begin(); itError != itErrors->value.End(); ++itError) {
                 const rapidjson::Value& rError = *itError;
                 if (rError.IsObject() && rError.HasMember("message") && rError["message"].IsString()) {
@@ -389,13 +389,13 @@ void WebstackClient::_ExecuteGraphQuery(const char* operationName, const char* q
                     throw mujinwebstackclient::MujinGraphQueryError(boost::str(boost::format("[%s:%d] graph query has errors \"%s\": %s")%(__PRETTY_FUNCTION__)%(__LINE__)%operationName%rError["message"].GetString()), errorCode);
                 }
             }
-            throw MUJIN_EXCEPTION_FORMAT("graph query has undefined errors \"%s\": %s", operationName%mujinjson::DumpJson(rResultDoc), MEC_HTTPServer);
+            throw MUJIN_EXCEPTION_FORMAT("graph query has undefined errors \"%s\": %s", operationName%mujinjsonwebstack::DumpJson(rResultDoc), MEC_HTTPServer);
         }
     }
 
     // should have data member
     if (!rResultDoc.HasMember("data")) {
-        throw MUJIN_EXCEPTION_FORMAT("Execute graph query does not have 'data' field in \"%s\", invalid response: %s", operationName%mujinjson::DumpJson(rResultDoc), MEC_HTTPServer);
+        throw MUJIN_EXCEPTION_FORMAT("Execute graph query does not have 'data' field in \"%s\", invalid response: %s", operationName%mujinjsonwebstack::DumpJson(rResultDoc), MEC_HTTPServer);
     }
 
     // set output
@@ -557,7 +557,7 @@ int WebstackClient::_CallGet(const std::string& desturi, rapidjson::Document& pt
     long http_code = 0;
     CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
     if( _buffer.rdbuf()->in_avail() > 0 ) {
-        mujinjson::ParseJson(pt, _buffer.str());
+       mujinjsonwebstack::ParseJson(pt, _buffer.str());
     }
     if( expectedhttpcode != 0 && http_code != expectedhttpcode ) {
         std::string error_message = GetJsonValueByKey<std::string>(pt, "error_message");
