@@ -516,6 +516,19 @@ std::string WebstackClient::GetScenePrimaryKeyFromURI_UTF16(const std::wstring& 
     return GetScenePrimaryKeyFromURI_UTF8(utf8line);
 }
 
+std::string WebstackClient::GetNameFromPrimaryKey_UTF8(const std::string& pk)
+{
+    return UnescapeString(pk);
+}
+
+std::wstring ControllerClientImpl::GetNameFromPrimaryKey_UTF16(const std::string& pk)
+{
+    std::string utf8 = GetNameFromPrimaryKey_UTF8(pk);
+    std::wstring utf16;
+    utf8::utf8to16(utf8.begin(), utf8.end(), std::back_inserter(utf16));
+    return utf16;
+}
+
 std::string WebstackClient::CreateObjectGeometry(const std::string& objectPk, const std::string& geometryName, const std::string& linkPk, const std::string& geomtype, double timeout)
 {
     rapidjson::Document pt(rapidjson::kObjectType);
