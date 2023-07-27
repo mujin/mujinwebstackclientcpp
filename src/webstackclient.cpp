@@ -521,7 +521,7 @@ std::string WebstackClient::GetNameFromPrimaryKey_UTF8(const std::string& pk)
     return UnescapeString(pk);
 }
 
-std::wstring ControllerClientImpl::GetNameFromPrimaryKey_UTF16(const std::string& pk)
+std::wstring WebstackClient::GetNameFromPrimaryKey_UTF16(const std::string& pk)
 {
     std::string utf8 = GetNameFromPrimaryKey_UTF8(pk);
     std::wstring utf16;
