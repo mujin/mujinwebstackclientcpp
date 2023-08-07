@@ -95,7 +95,145 @@ std::wstring ParseWincapsWCNPath(const T& sourcefilename, const boost::function<
     return strWCNPath;
 }
 
+/// \brief given a port string "80", fill ControllerClientInfo httpPort
+void _ParseClientInfoPort(const char* port, size_t length, ControllerClientInfo& clientInfo)
+{
+    clientInfo.httpPort = 0;
+    for (; length > 0; ++port, --length) {
+        clientInfo.httpPort = clientInfo.httpPort * 10 + (*port - '0');
+    }
+}
+
 }  // end namespace
+
+
+WebstackClientInfo WebstackClientInfo::FromUrl(const char* url)
+{
+    WebstackClientInfo clientInfo;
+    const char* colonSlashSlash = strstr(url, "://");
+    if (colonSlashSlash == nullptr) {
+        return clientInfo;
+    }
+    const char* hostname = colonSlashSlash + sizeof("://") - 1;
+    const char* at = strstr(hostname, "@"); // not found is ok
+    const char* slash = strstr(hostname, "/"); // not found is ok
+    if (at != nullptr && (slash == nullptr || at < slash)) {
+        // if the at is before the slash, i.e. for the username:password
+        const char* usernamePassword = hostname;
+        hostname = at + sizeof("@") - 1;
+        const char* colon = strstr(usernamePassword, ":"); // not found is ok
+        if (colon != nullptr) {
+            const char* password = colon + sizeof(":") - 1;
+            clientInfo.username = std::string(usernamePassword, colon - usernamePassword);
+            clientInfo.password = std::string(password, at - password);
+        } else {
+            clientInfo.username = std::string(usernamePassword, at - usernamePassword);
+        }
+    }
+    const char* port = strstr(hostname, ":"); // not found is ok
+    if (slash == nullptr) {
+        if (port == nullptr) {
+            // no port, no slash
+            clientInfo.host = hostname;
+        } else {
+            // has port, no slash
+            const char* portStart = port + sizeof(":") - 1;
+            _ParseClientInfoPort(portStart, strlen(portStart), clientInfo);
+            clientInfo.host = std::string(hostname, port - hostname);
+        }
+    } else {
+        if (port != nullptr && port < slash) {
+            // has port before slash
+            const char* portStart = port + sizeof(":") - 1;
+            _ParseClientInfoPort(portStart, slash - portStart, clientInfo);
+            clientInfo.host = std::string(hostname, port - hostname);
+        } else {
+            // no port, but has slash
+            clientInfo.host = std::string(hostname, slash - hostname);
+        }
+    }
+    return clientInfo;
+}
+
+void ControllerClientInfo::Reset()
+{
+    host.clear();
+    httpPort = 0;
+    username.clear();
+    password.clear();
+    additionalHeaders.clear();
+    unixEndpoint.clear();
+}
+
+void ControllerClientInfo::LoadFromJson(const rapidjson::Value& rClientInfo)
+{
+    mujinjson::LoadJsonValueByKey(rClientInfo, "host", host);
+    mujinjson::LoadJsonValueByKey(rClientInfo, "httpPort", httpPort);
+    mujinjson::LoadJsonValueByKey(rClientInfo, "username", username);
+    mujinjson::LoadJsonValueByKey(rClientInfo, "password", password);
+    mujinjson::LoadJsonValueByKey(rClientInfo, "additionalHeaders", additionalHeaders);
+    mujinjson::LoadJsonValueByKey(rClientInfo, "unixEndpoint", unixEndpoint);
+}
+
+void ControllerClientInfo::SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const
+{
+    rClientInfo.SetObject();
+    if( !host.empty() ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "host", host, alloc);
+    }
+    if( httpPort != 0 ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "httpPort", httpPort, alloc);
+    }
+    if( !username.empty() ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "username", username, alloc);
+    }
+    if( !password.empty() ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "password", password, alloc);
+    }
+    if( !additionalHeaders.empty() ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "additionalHeaders", additionalHeaders, alloc);
+    }
+    if( !unixEndpoint.empty() ) {
+        mujinjson::SetJsonValueByKey(rClientInfo, "unixEndpoint", unixEndpoint, alloc);
+    }
+}
+
+void ControllerClientInfo::SaveToJson(rapidjson::Document& rClientInfo) const
+{
+    SaveToJson(rClientInfo, rClientInfo.GetAllocator());
+}
+
+bool ControllerClientInfo::operator==(const ControllerClientInfo &rhs) const
+{
+    return host == rhs.host &&
+           httpPort == rhs.httpPort &&
+           username == rhs.username &&
+           password == rhs.password &&
+           additionalHeaders == rhs.additionalHeaders &&
+           unixEndpoint == rhs.unixEndpoint;
+}
+
+std::string ControllerClientInfo::GetURL(bool bIncludeNamePassword) const
+{
+    std::string url;
+    if( host.empty() ) {
+        return url;
+    }
+    url += "http://";
+    if( bIncludeNamePassword ) {
+        url += username;
+        url += ":";
+        url += password;
+        url += "@";
+    }
+
+    url += host;
+    if( httpPort != 0 ) {
+        url += ":";
+        url += std::to_string(httpPort);
+    }
+    return url;
+}
 
 WebstackClient::WebstackClient(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
 {
@@ -103,8 +241,8 @@ WebstackClient::WebstackClient(const std::string& usernamepassword, const std::s
     size_t usernameindex = 0;
     usernameindex = usernamepassword.find_first_of(':');
     BOOST_ASSERT(usernameindex != std::string::npos );
-    _username = usernamepassword.substr(0,usernameindex);
-    std::string password = usernamepassword.substr(usernameindex+1);
+    _clientInfo.username = usernamepassword.substr(0,usernameindex);
+    _clientInfo.password = usernamepassword.substr(usernameindex+1);
 
     _httpheadersjson = NULL;
     _httpheadersstl = NULL;
@@ -118,10 +256,10 @@ WebstackClient::WebstackClient(const std::string& usernamepassword, const std::s
     // hack for now since webdav server and api server could be running on different ports
     if( boost::algorithm::ends_with(_baseuri, ":8000/") || (options&0x80000000) ) {
         // testing on localhost, however the webdav server is running on port 80...
-        _basewebdavuri = str(boost::format("%s/u/%s/")%_baseuri.substr(0,_baseuri.size()-6)%_username);
+        _basewebdavuri = str(boost::format("%s/u/%s/")%_baseuri.substr(0,_baseuri.size()-6)%_clientInfo.username);
     }
     else {
-        _basewebdavuri = str(boost::format("%su/%s/")%_baseuri%_username);
+        _basewebdavuri = str(boost::format("%su/%s/")%_baseuri%_clientInfo.username);
     }
 
     //CURLcode code = curl_global_init(CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32);
@@ -275,7 +413,7 @@ void WebstackClient::SetUserAgent(const std::string& userAgent)
 void WebstackClient::SetAdditionalHeaders(const std::vector<std::string>& additionalHeaders)
 {
     boost::mutex::scoped_lock lock(_mutex);
-    _additionalHeaders = additionalHeaders;
+    _clientInfo.additionalHeaders = additionalHeaders;
     _SetupHTTPHeadersJSON();
     _SetupHTTPHeadersSTL();
     _SetupHTTPHeadersMultipartFormData();
@@ -283,12 +421,17 @@ void WebstackClient::SetAdditionalHeaders(const std::vector<std::string>& additi
 
 const std::string& WebstackClient::GetUserName() const
 {
-    return _username;
+    return _clientInfo.username;
 }
 
 const std::string& WebstackClient::GetBaseURI() const
 {
     return _baseuri;
+}
+
+const WebstackClientInfo& WebstackClient::GetClientInfo() const
+{
+    return _clientInfo;
 }
 
 void WebstackClient::SetProxy(const std::string& serverport, const std::string& userpw)
@@ -857,7 +1000,7 @@ void WebstackClient::_SetupHTTPHeadersJSON()
     _httpheadersjson = curl_slist_append(_httpheadersjson, "Keep-Alive: 20"); // keep alive for 20s?
     // test on windows first
     //_httpheadersjson = curl_slist_append(_httpheadersjson, "Accept-Encoding: gzip, deflate");
-    for (const std::string& additionalHeader : _additionalHeaders) {
+    for (const std::string& additionalHeader : _clientInfo.additionalHeaders) {
         _httpheadersjson = curl_slist_append(_httpheadersjson, additionalHeader.c_str());
     }
 }
@@ -877,7 +1020,7 @@ void WebstackClient::_SetupHTTPHeadersSTL()
     _httpheadersstl = curl_slist_append(_httpheadersstl, "Keep-Alive: 20"); // keep alive for 20s?
     // test on windows first
     //_httpheadersstl = curl_slist_append(_httpheadersstl, "Accept-Encoding: gzip, deflate");
-    for (const std::string& additionalHeader : _additionalHeaders) {
+    for (const std::string& additionalHeader : _clientInfo.additionalHeaders) {
         _httpheadersstl = curl_slist_append(_httpheadersstl, additionalHeader.c_str());
     }
 }
@@ -897,7 +1040,7 @@ void WebstackClient::_SetupHTTPHeadersMultipartFormData()
     _httpheadersmultipartformdata = curl_slist_append(_httpheadersmultipartformdata, "Keep-Alive: 20"); // keep alive for 20s?
     // test on windows first
     //_httpheadersmultipartformdata = curl_slist_append(_httpheadersmultipartformdata, "Accept-Encoding: gzip, deflate");
-    for (const std::string& additionalHeader : _additionalHeaders) {
+    for (const std::string& additionalHeader : _clientInfo.additionalHeaders) {
         _httpheadersmultipartformdata = curl_slist_append(_httpheadersmultipartformdata, additionalHeader.c_str());
     }
 }

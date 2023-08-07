@@ -76,6 +76,35 @@ struct FileEntry
 
 typedef double Real;
 
+/// \brief connecting to a controller's webstack
+class MUJINWEBSTACKCLIENT_API WebstackClientInfo : public mujinjsonwebstack::JsonSerializable
+{
+public:
+    static WebstackClientInfo FromUrl(const char* url);
+
+    void Reset();
+
+    void LoadFromJson(const rapidjson::Value& rClientInfo) override;
+    void SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const override;
+
+    bool operator==(const WebstackClientInfo &rhs) const;
+    bool operator!=(const WebstackClientInfo &rhs) const {
+        return !operator==(rhs);
+    }
+    std::string GetURL(bool bIncludeNamePassword) const;
+
+    inline bool IsEnabled() const {
+        return !host.empty();
+    }
+
+    std::string host;
+    uint16_t httpPort = 0; ///< Post to communicate with the webstack. If 0, then use the default port
+    std::string username;
+    std::string password;
+    std::vector<std::string> additionalHeaders; ///< expect each value to be in the format of "Header-Name: header-value"
+    std::string unixEndpoint; ///< unix socket endpoint for communicating with HTTP server over unix socket
+};
+
 /// \brief Creates on MUJIN Controller instance.
 ///
 /// Only one call can be made at a time. In order to make multiple calls simultaneously, create another instance.
@@ -130,6 +159,8 @@ public:
 
     /// \brief returns the URI used to setup the connection
     const std::string& GetBaseURI() const;
+
+    const WebstackClientInfo& GetClientInfo() const;
 
     /// \brief If necessary, changes the proxy to communicate to the controller server. Setting proxy disables previously set unix endpoint.
     ///
@@ -341,14 +372,15 @@ private:
     CURL *_curl;
     boost::mutex _mutex;
     std::stringstream _buffer;
-    std::string _baseuri, _baseapiuri, _basewebdavuri, _uri, _username;
+    std::string _baseuri, _baseapiuri, _basewebdavuri, _uri;
+
+    WebstackClientInfo _clientInfo;
 
     curl_slist *_httpheadersjson;
     curl_slist *_httpheadersstl;
     curl_slist *_httpheadersmultipartformdata;
     std::string _charset, _language;
     std::string _csrfmiddlewaretoken;
-    std::vector<std::string> _additionalHeaders; ///< list of "Header-Name: header-value" additional http headers
 
     rapidjson::Document _profile; ///< user profile and versioning
     std::string _errormessage; ///< set when an error occurs in libcurl
