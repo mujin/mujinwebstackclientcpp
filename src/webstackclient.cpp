@@ -238,11 +238,7 @@ std::string ControllerClientInfo::GetURL(bool bIncludeNamePassword) const
 WebstackClient::WebstackClient(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
 {
     BOOST_ASSERT( !baseuri.empty() );
-    size_t usernameindex = 0;
-    usernameindex = usernamepassword.find_first_of(':');
-    BOOST_ASSERT(usernameindex != std::string::npos );
-    _clientInfo.username = usernamepassword.substr(0,usernameindex);
-    _clientInfo.password = usernamepassword.substr(usernameindex+1);
+    _clientInfo = WebstackClientInfo::FromUrl(baseuri.c_str());
 
     _httpheadersjson = NULL;
     _httpheadersstl = NULL;
