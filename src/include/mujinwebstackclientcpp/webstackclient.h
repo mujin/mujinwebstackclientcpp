@@ -83,7 +83,7 @@ public:
     /// \brief given a url "http[s]://[username[:password]@]hostname[:port][/path]", parse WebstackClientInfo
     static WebstackClientInfo FromUrl(const char* url);
 
-    void Reset();
+    virtual void Reset();
 
     void LoadFromJson(const rapidjson::Value& rClientInfo) override;
     void SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const override;
