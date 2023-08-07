@@ -12,7 +12,7 @@ namespace {
 
 bool IsWebstackLocal(const WebstackClientInfo& clientInfo)
 {
-    return IsHostnameLocal(clientInfo.host.c_str(), clientInfo.length());
+    return IsHostnameLocal(clientInfo.host.c_str(), clientInfo.host.length());
 }
 
 const char* GetUnixEndpointForLocalWebstack(const WebstackClientInfo& clientInfo)
@@ -20,7 +20,7 @@ const char* GetUnixEndpointForLocalWebstack(const WebstackClientInfo& clientInfo
     if (IsWebstackLocal(clientInfo)) {
         const char* unixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
         if (unixendpoint != nullptr && unixendpoint[0] != '\0') {
-            MUJIN_LOG_DEBUG(boost::str(boost::format("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"")%unixendpoint%url));
+            MUJIN_LOG_DEBUG(boost::str(boost::format("forcing webstack client to use unix endpoint \"%s\" since host is \"%s\"")%unixendpoint%clientInfo.host));
             return unixendpoint;
         }
     }

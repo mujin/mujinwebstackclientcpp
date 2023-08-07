@@ -80,7 +80,7 @@ typedef double Real;
 class MUJINWEBSTACKCLIENT_API WebstackClientInfo : public mujinjsonwebstack::JsonSerializable
 {
 public:
-    /// \brief given a url "http[s]://[username[:password]@]hostname[:port][/path]", parse ControllerClientInfo
+    /// \brief given a url "http[s]://[username[:password]@]hostname[:port][/path]", parse WebstackClientInfo
     static WebstackClientInfo FromUrl(const char* url);
 
     void Reset();
