@@ -15,13 +15,13 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
 
     const int fd = ::open(filename, O_RDONLY);
     if (fd < 0) {
-        throw MujinJSONException(boost::str(boost::format("Could not open Json file %s") % filename));
+        throw MujinJSONWebstackException(boost::str(boost::format("Could not open Json file %s") % filename));
     }
 
     struct stat fs;
     if (::fstat(fd, &fs) != 0) {
         ::close(fd);
-        throw MujinJSONException(boost::str(boost::format("Could not get file stats of Json file %s") % filename));
+        throw MujinJSONWebstackException(boost::str(boost::format("Could not get file stats of Json file %s") % filename));
     }
 
     if( fs.st_size == 0 ) {
@@ -30,7 +30,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
         size_t nBufferSize = nChunkSize;
         char* pbuffer = (char*)::malloc(nBufferSize);
         if( !pbuffer ) {
-            throw MujinJSONException("Could not allocate memory");
+            throw MujinJSONWebstackException("Could not allocate memory");
         }
         size_t nFileSize = 0;
 
@@ -40,7 +40,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
                 nBufferSize += nChunkSize;
                 pbuffer = (char*)::realloc(pbuffer, nBufferSize);
                 if( !pbuffer ) {
-                    throw MujinJSONException("Could not allocate memory");
+                    throw MujinJSONWebstackException("Could not allocate memory");
                 }
                 nTotalToRead = nBufferSize - nFileSize;
             }
@@ -51,7 +51,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
                 }
                 ::close(fd);
                 ::free(pbuffer);
-                throw MujinJSONException(boost::str(boost::format("Could not read file data from Json file '%s'") % filename));
+                throw MujinJSONWebstackException(boost::str(boost::format("Could not read file data from Json file '%s'") % filename));
             }
             if( count == 0 ) {
                 break; // EOF
@@ -63,7 +63,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
 
         if( nFileSize == 0 ) {
             ::free(pbuffer);
-            throw MujinJSONException(boost::str(boost::format("JSON file '%s' is empty") % filename));
+            throw MujinJSONWebstackException(boost::str(boost::format("JSON file '%s' is empty") % filename));
         }
 
         try {
@@ -87,7 +87,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
                 continue; // retry if interrupted
             }
             ::close(fd);
-            throw MujinJSONException(boost::str(boost::format("Could not read file data from Json file '%s'") % filename));
+            throw MujinJSONWebstackException(boost::str(boost::format("Could not read file data from Json file '%s'") % filename));
         }
         if( count == 0 ) {
             break; // EOF
@@ -97,7 +97,7 @@ void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buff
 
     ::close(fd);
     if( offset == 0 ) {
-        throw MujinJSONException(boost::str(boost::format("JSON file '%s' is empty") % filename));
+        throw MujinJSONWebstackException(boost::str(boost::format("JSON file '%s' is empty") % filename));
     }
 
     ParseJson(d, reinterpret_cast<char*>(buffer.data()), offset);

@@ -161,6 +161,10 @@ public:
     /// \brief returns the URI used to setup the connection
     const std::string& GetBaseURI() const;
 
+    std::string GetURIWithUsernamePassword() const {
+        return GetClientInfo().GetURL(true);
+    }
+
     const WebstackClientInfo& GetClientInfo() const;
 
     /// \brief If necessary, changes the proxy to communicate to the controller server. Setting proxy disables previously set unix endpoint.
