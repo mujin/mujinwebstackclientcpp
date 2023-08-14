@@ -431,6 +431,7 @@ void WebstackClient::SetProxy(const std::string& serverport, const std::string& 
     CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, NULL);
     CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, serverport.c_str());
     CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, userpw.c_str());
+    _clientInfo.unixEndpoint.clear();
 }
 
 void WebstackClient::SetUnixEndpoint(const std::string& unixendpoint)
@@ -439,6 +440,7 @@ void WebstackClient::SetUnixEndpoint(const std::string& unixendpoint)
     CURL_OPTION_SETTER(_curl, CURLOPT_PROXY, NULL);
     CURL_OPTION_SETTER(_curl, CURLOPT_PROXYUSERPWD, NULL);
     CURL_OPTION_SETTER(_curl, CURLOPT_UNIX_SOCKET_PATH, unixendpoint.c_str());
+    _clientInfo.unixEndpoint = unixendpoint;
 }
 
 void WebstackClient::RestartServer(double timeout)
