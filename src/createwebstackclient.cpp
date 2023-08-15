@@ -20,10 +20,12 @@ const char* GetUnixEndpointForLocalWebstack(const WebstackClientInfo& clientInfo
     if (IsWebstackLocal(clientInfo)) {
         const char* unixendpoint = std::getenv("MUJIN_WEBSTACK_UNIX_ENDPOINT");
         if (unixendpoint != nullptr && unixendpoint[0] != '\0') {
-            MUJIN_LOG_DEBUG(boost::str(boost::format("forcing webstack client to use unix endpoint \"%s\" since host is \"%s\"")%unixendpoint%clientInfo.host));
+            MUJIN_LOG_DEBUG(boost::str(boost::format("forcing webstack client to use unix endpoint \"%s\" since url is \"%s\"")%unixendpoint%clientInfo.GetURL(true)));
             return unixendpoint;
         }
+        MUJIN_LOG_DEBUG(boost::str(boost::format("No unix endpoint -- url is \"%s\"")%clientInfo.GetURL(true)));
     }
+    MUJIN_LOG_DEBUG(boost::str(boost::format("Not using unix endpoint since url is \"%s\"")%clientInfo.GetURL(true)));
     return "";
 }
 

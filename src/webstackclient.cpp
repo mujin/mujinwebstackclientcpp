@@ -104,6 +104,18 @@ void _ParseClientInfoPort(const char* port, size_t length, WebstackClientInfo& c
     }
 }
 
+void _ParseUsernamePassword(const char* usernamePassword, const char* usernamePasswordEnd, WebstackClientInfo& clientInfo)
+{
+    const char* colon = strstr(usernamePassword, ":"); // not found is ok
+    if (colon != nullptr) {
+        const char* password = colon + sizeof(":") - 1;
+        clientInfo.username = std::string(usernamePassword, colon - usernamePassword);
+        clientInfo.password = std::string(password, at - password);
+    } else {
+        clientInfo.username = std::string(usernamePassword, at - usernamePassword);
+    }
+}
+
 }  // end namespace
 
 
@@ -121,14 +133,7 @@ WebstackClientInfo WebstackClientInfo::FromUrl(const char* url)
         // if the at is before the slash, i.e. for the username:password
         const char* usernamePassword = hostname;
         hostname = at + sizeof("@") - 1;
-        const char* colon = strstr(usernamePassword, ":"); // not found is ok
-        if (colon != nullptr) {
-            const char* password = colon + sizeof(":") - 1;
-            clientInfo.username = std::string(usernamePassword, colon - usernamePassword);
-            clientInfo.password = std::string(password, at - password);
-        } else {
-            clientInfo.username = std::string(usernamePassword, at - usernamePassword);
-        }
+        _ParseUsernamePassword(usernamePassword, at, clientInfo);
     }
     const char* port = strstr(hostname, ":"); // not found is ok
     if (slash == nullptr) {
@@ -234,6 +239,10 @@ WebstackClient::WebstackClient(const std::string& usernamepassword, const std::s
 {
     BOOST_ASSERT( !baseuri.empty() );
     _clientInfo = WebstackClientInfo::FromUrl(baseuri.c_str());
+    if (!usernamepassword.empty()) {
+        const char* usernamePasswordPtr = usernamepassword.c_str(); 
+        _ParseUsernamePassword(usernamePasswordPtr, usernamePasswordPtr + usernamepassword.length(), _clientInfo);
+    }
 
     _httpheadersjson = NULL;
     _httpheadersstl = NULL;
