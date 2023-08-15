@@ -110,9 +110,9 @@ void _ParseUsernamePassword(const char* usernamePassword, const char* usernamePa
     if (colon != nullptr) {
         const char* password = colon + sizeof(":") - 1;
         clientInfo.username = std::string(usernamePassword, colon - usernamePassword);
-        clientInfo.password = std::string(password, at - password);
+        clientInfo.password = std::string(password, usernamePasswordEnd - password);
     } else {
-        clientInfo.username = std::string(usernamePassword, at - usernamePassword);
+        clientInfo.username = std::string(usernamePassword, usernamePasswordEnd - usernamePassword);
     }
 }
 
