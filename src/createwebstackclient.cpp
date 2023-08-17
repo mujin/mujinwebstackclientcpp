@@ -12,6 +12,9 @@ namespace {
 
 bool IsWebstackLocal(const WebstackClientInfo& clientInfo)
 {
+    if (clientInfo.httpPort != 0 && clientInfo.httpPort != 80) {
+        return false;
+    }
     return IsHostnameLocal(clientInfo.host.c_str(), clientInfo.host.length());
 }
 
