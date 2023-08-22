@@ -510,7 +510,7 @@ void WebstackClient::_ExecuteGraphQuery(const char* operationName, const char* q
         }
 
         _uri = _baseuri + "api/v2/graphql";
-        _CallPost(_uri, rRequestStringBuffer.GetString(), rResultDoc, 200, timeout);
+        _CallPost(_uri, rRequestStringBuffer.GetString(), rResultDoc, rResultDoc.GetAllocator(), 200, timeout);
     }
 
     // parse response
@@ -620,7 +620,7 @@ void WebstackClient::ModifySceneAddReferenceObjectPK(const std::string &scenepk,
     pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
 
     boost::mutex::scoped_lock lock(_mutex);
-    _CallPost(_baseuri + "referenceobjectpks/add/", DumpJson(pt), pt2, 200, timeout);
+    _CallPost(_baseuri + "referenceobjectpks/add/", DumpJson(pt), pt2, pt2.GetAllocator(), 200, timeout);
 }
 
 void WebstackClient::ModifySceneRemoveReferenceObjectPK(const std::string &scenepk, const std::string &referenceobjectpk, double timeout)
@@ -637,7 +637,7 @@ void WebstackClient::ModifySceneRemoveReferenceObjectPK(const std::string &scene
     pt.AddMember("referenceobjectpk", value, pt.GetAllocator());
 
     boost::mutex::scoped_lock lock(_mutex);
-    _CallPost(_baseuri + "referenceobjectpks/remove/", DumpJson(pt), pt2, 200, timeout);
+    _CallPost(_baseuri + "referenceobjectpks/remove/", DumpJson(pt), pt2, pt2.GetAllocator(), 200, timeout);
 }
 
 const std::string& WebstackClient::GetDefaultTaskType()
@@ -697,10 +697,10 @@ int WebstackClient::CallGet(const std::string& relativeuri, rapidjson::Document&
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
     _uri += relativeuri;
-    return _CallGet(_uri, pt, expectedhttpcode, timeout);
+    return _CallGet(_uri, pt, pt.GetAllocator(), expectedhttpcode, timeout);
 }
 
-int WebstackClient::_CallGet(const std::string& desturi, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::_CallGet(const std::string& desturi, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& alloc, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_INFO(str(boost::format("GET %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -715,11 +715,11 @@ int WebstackClient::_CallGet(const std::string& desturi, rapidjson::Document& pt
     long http_code = 0;
     CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
     if( _buffer.rdbuf()->in_avail() > 0 ) {
-       mujinjsonwebstack::ParseJson(pt, _buffer.str());
+        mujinjsonwebstack::ParseJson(rResult, alloc, _buffer);
     }
     if( expectedhttpcode != 0 && http_code != expectedhttpcode ) {
-        std::string error_message = GetJsonValueByKey<std::string>(pt, "error_message");
-        std::string traceback = GetJsonValueByKey<std::string>(pt, "traceback");
+        std::string error_message = GetJsonValueByKey<std::string>(rResult, "error_message");
+        std::string traceback = GetJsonValueByKey<std::string>(rResult, "traceback");
         throw MUJIN_EXCEPTION_FORMAT("HTTP GET to '%s' returned HTTP status %s: %s", desturi%http_code%error_message, MEC_HTTPServer);
     }
     return http_code;
@@ -832,11 +832,11 @@ int WebstackClient::CallPost(const std::string& relativeuri, const std::string& 
     boost::mutex::scoped_lock lock(_mutex);
     _uri = _baseapiuri;
     _uri += relativeuri;
-    return _CallPost(_uri, data, pt, expectedhttpcode, timeout);
+    return _CallPost(_uri, data, pt, pt.GetAllocator(), expectedhttpcode, timeout);
 }
 
 /// \brief expectedhttpcode is not 0, then will check with the returned http code and if not equal will throw an exception
-int WebstackClient::_CallPost(const std::string& desturi, const std::string& data, rapidjson::Document& pt, int expectedhttpcode, double timeout)
+int WebstackClient::_CallPost(const std::string& desturi, const std::string& data, rapidjson::Value& rResult, rapidjson::Document::AllocatorType& alloc, int expectedhttpcode, double timeout)
 {
     MUJIN_LOG_VERBOSE(str(boost::format("POST %s")%desturi));
     CURL_OPTION_SAVE_SETTER(_curl, CURLOPT_TIMEOUT_MS, 0L, (long)(timeout * 1000L));
@@ -853,13 +853,13 @@ int WebstackClient::_CallPost(const std::string& desturi, const std::string& dat
     long http_code = 0;
     CURL_INFO_GETTER(_curl, CURLINFO_RESPONSE_CODE, &http_code);
     if( _buffer.rdbuf()->in_avail() > 0 ) {
-        ParseJson(pt, _buffer.str());
+        ParseJson(rResult, alloc, _buffer);
     } else {
-        pt.SetObject();
+        rResult.SetObject();
     }
     if( expectedhttpcode != 0 && http_code != expectedhttpcode ) {
-        std::string error_message = GetJsonValueByKey<std::string>(pt, "error_message");
-        std::string traceback = GetJsonValueByKey<std::string>(pt, "traceback");
+        std::string error_message = GetJsonValueByKey<std::string>(rResult, "error_message");
+        std::string traceback = GetJsonValueByKey<std::string>(rResult, "traceback");
         throw MUJIN_EXCEPTION_FORMAT("HTTP POST to '%s' returned HTTP status %s: %s", desturi%http_code%error_message, MEC_HTTPServer);
     }
     return http_code;

@@ -166,6 +166,7 @@ inline void DumpJson(const rapidjson::Value& value, std::ostream& os, const unsi
     }
 }
 
+/// \brief This clears the d's allocator!
 inline void ParseJson(rapidjson::Document& d, const char* str, size_t length) {
     // repeatedly calling Parse on the same rapidjson::Document will not release previsouly allocated memory, memory will accumulate until the object is destroyed
     // we use a new temporary Document to parse, and swap content with the original one, so that memory in original Document will be released when this function ends
@@ -181,10 +182,12 @@ inline void ParseJson(rapidjson::Document& d, const char* str, size_t length) {
     }
 }
 
+/// \brief This clears the d's allocator!
 inline void ParseJson(rapidjson::Document& d, const std::string& str) {
     ParseJson(d, str.c_str(), str.size());
 }
 
+/// \brief This clears the d's allocator!
 inline void ParseJson(rapidjson::Document& d, std::istream& is) {
     rapidjson::IStreamWrapper isw(is);
     // see note in: void ParseJson(rapidjson::Document& d, const std::string& str)
@@ -195,6 +198,28 @@ inline void ParseJson(rapidjson::Document& d, std::istream& is) {
         throw MujinJSONWebstackException(boost::str(boost::format("Json stream is invalid (offset %u) %s")%((unsigned)d.GetErrorOffset())%GetParseError_En(d.GetParseError())));
     }
 }
+
+inline void ParseJson(rapidjson::Value& r, rapidjson::Document::AllocatorType& alloc, std::istream& is)
+{
+    rapidjson::IStreamWrapper isw(is);
+    rapidjson::GenericReader<rapidjson::Value::EncodingType, rapidjson::Value::EncodingType, rapidjson::Document::AllocatorType> reader(&alloc);
+    //ClearStackOnExit scope(*this);
+
+    size_t kDefaultStackCapacity = 1024;
+    rapidjson::Document rTemp(&alloc, kDefaultStackCapacity); // needed by Parse to be a document
+    rTemp.ParseStream<rapidjson::kParseFullPrecisionFlag>(isw); // parse float in full precision mode
+    if (rTemp.HasParseError()) {
+        throw MujinJSONWebstackException(boost::str(boost::format("Json stream is invalid (offset %u) %s")%((unsigned)rTemp.GetErrorOffset())%GetParseError_En(rTemp.GetParseError())));
+    }
+    r.Swap(rTemp);
+    
+//    rapidjson::ParseResult parseResult = reader.template Parse<rapidjson::kParseFullPrecisionFlag>(isw, rTemp);
+//    if( parseResult.IsError() ) {
+//        *stack_.template Pop<ValueType>(1)
+//        throw MujinJSONException(boost::str(boost::format("Json stream is invalid (offset %u) %s")%((unsigned)parseResult.Offset())%GetParseError_En(parseResult.Code())));
+//    }
+}
+
 
 template <typename Container>
 MUJINWEBSTACKCLIENT_API void ParseJsonFile(rapidjson::Document& d, const char* filename, Container& buffer);
