@@ -1,0 +1,9 @@
+gh-pages/
+
+# emacs
+.~
+
+# vim
+*.swp
+*.swo
+*.swn
