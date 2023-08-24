@@ -14,8 +14,8 @@
 /** \file mujinjson.h
     \brief Wrapper for rapidjson.
  */
-#ifndef MUJIN_CONTROLLERCLIENT_JSON_H
-#define MUJIN_CONTROLLERCLIENT_JSON_H
+#ifndef MUJIN_WEBSTACKCLIENT_JSON_H
+#define MUJIN_WEBSTACKCLIENT_JSON_H
 
 #include <array>
 #include <boost/shared_ptr.hpp>
@@ -38,7 +38,7 @@
 #include <rapidjson/error/en.h>
 #include <rapidjson/prettywriter.h>
 
-#include <mujincontrollerclient/config.h>
+#include <mujinwebstackclientcpp/config.h>
 
 #ifndef MUJINJSON_LOAD_REQUIRED_JSON_VALUE_BY_KEY
 #define MUJINJSON_LOAD_REQUIRED_JSON_VALUE_BY_KEY(rValue, key, param) \

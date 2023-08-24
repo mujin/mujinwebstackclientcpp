@@ -3,7 +3,7 @@
 
     Shows how to quickly register a scene and execute a task and get the results. Because the scene is directly used instead of imported.
  */
-#include <mujincontrollerclient/mujincontrollerclient.h>
+#include <mujinwebstackclientcpp/webstackclient.h>
 
 #include <boost/thread/thread.hpp> // for sleep
 
@@ -14,18 +14,18 @@ using namespace mujinclient;
 int main(int argc, char ** argv)
 {
     try {
-        ControllerClientPtr controller;
+        WebstackClientPtr controller;
         if( argc >= 5 ) {
-            controller = CreateControllerClient(argv[1], argv[2], argv[3], argv[4]);
+            controller = CreateWebstackClient(argv[1], argv[2], argv[3], argv[4]);
         }
         if( argc == 4 ) {
-            controller = CreateControllerClient(argv[1], argv[2], argv[3]);
+            controller = CreateWebstackClient(argv[1], argv[2], argv[3]);
         }
         else if( argc == 3 ) {
-            controller = CreateControllerClient(argv[1], argv[2]);
+            controller = CreateWebstackClient(argv[1], argv[2]);
         }
         else {
-            controller = CreateControllerClient(argv[1]);
+            controller = CreateWebstackClient(argv[1]);
         }
         std::cout << "connected to controller v" << controller->GetVersion() << std::endl;
         std::vector<std::string> scenekeys;
@@ -49,5 +49,5 @@ int main(int argc, char ** argv)
     catch(const MujinException& ex) {
         std::cout << "exception thrown: " << ex.message() << std::endl;
     }
-    ControllerClientDestroy();
+    WebstackClientDestroy();
 }

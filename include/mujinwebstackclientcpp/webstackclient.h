@@ -121,8 +121,6 @@ typedef boost::shared_ptr<RobotResource> RobotResourcePtr;
 typedef boost::weak_ptr<RobotResource> RobotResourceWeakPtr;
 typedef boost::shared_ptr<SceneResource> SceneResourcePtr;
 typedef boost::weak_ptr<SceneResource> SceneResourceWeakPtr;
-typedef boost::shared_ptr<TaskResource> TaskResourcePtr;
-typedef boost::weak_ptr<TaskResource> TaskResourceWeakPtr;
 typedef boost::shared_ptr<DebugResource> DebugResourcePtr;
 typedef boost::weak_ptr<DebugResource> DebugResourceWeakPtr;
 typedef double Real;
@@ -1036,53 +1034,6 @@ public:
     virtual SceneResourcePtr Copy(const std::string& name);
 };
 
-class MUJINCLIENT_API TaskResource : public WebResource
-{
-public:
-    TaskResource(WebstackClientPtr controller, const std::string& pk);
-    virtual ~TaskResource() {
-    }
-
-    /// \brief execute the task.
-    ///
-    /// This operation is non-blocking and will return immediately after the execution is started. In order to check if the task is running or is complete, use \ref GetRunTimeStatus() and \ref GetResult()
-    /// \return true if task was executed fine
-    virtual bool Execute();
-
-    /// \brief if the task is currently executing, send a cancel request
-    virtual void Cancel();
-
-    /// \brief get the run-time status of the executed task.
-    ///
-    /// This will only work if the task has been previously Executed with execute
-    /// If the task is not currently running, will set status.code to JSC_Unknown
-    /// \param options if options is 1, also get the message
-    virtual void GetRunTimeStatus(JobStatus& status, int options = 1);
-
-    /// \brief Gets or creates the a optimization part of the scene
-    ///
-    /// \param optimizationname the name of the optimization to search for or create
-    /// \param optimizaitontype The type of optimization, can be "robotplacement" or "placements"
-    virtual OptimizationResourcePtr GetOrCreateOptimizationFromName_UTF8(const std::string& optimizationname, const std::string& optimizationtype=std::string("robotplacement"));
-
-    /// \brief \see GetOrCreateOptimizationFromName_UTF8
-    virtual OptimizationResourcePtr GetOrCreateOptimizationFromName_UTF16(const std::wstring& optimizationname, const std::string& optimizationtype=std::string("robotplacement"));
-
-    /// \brief gets a list of all the scene primary keys currently available to the user
-    virtual void GetOptimizationPrimaryKeys(std::vector<std::string>& optimizationkeys);
-
-    /// \brief Get the task info for tasks of type <b>itlplanning</b>
-    virtual void GetTaskParameters(ITLPlanningTaskParameters& taskparameters);
-
-    /// \brief Set new task info for tasks of type <b>itlplanning</b>
-    virtual void SetTaskParameters(const ITLPlanningTaskParameters& taskparameters);
-
-    /// \brief gets the result of the task execution. If no result has been computed yet, will return a NULL pointer.
-    virtual PlanningResultResourcePtr GetResult();
-
-protected:
-    std::string _jobpk; ///< the job primary key used to track the status of the running task after \ref Execute is called
-};
 
 class MUJINCLIENT_API OptimizationResource : public WebResource
 {
@@ -1112,57 +1063,8 @@ public:
     /// \param options if options is 1, also get the message
     virtual void GetRunTimeStatus(JobStatus& status, int options = 1);
 
-    /// \brief Gets the results of the optimization execution ordered by task_time.
-    ///
-    /// \param startoffset The offset to retrieve the results from. Ordered
-    /// \param num The number of results to get starting at startoffset. If 0, will return ALL results.
-    virtual void GetResults(std::vector<PlanningResultResourcePtr>& results, int startoffset=0, int num=0);
-
 protected:
     std::string _jobpk; ///< the job primary key used to track the status of the running optimization after \ref Execute is called
-};
-
-class MUJINCLIENT_API PlanningResultResource : public WebResource
-{
-public:
-    PlanningResultResource(WebstackClientPtr controller, const std::string& resulttype, const std::string& pk);
-    PlanningResultResource(WebstackClientPtr controller, const std::string& pk);
-    virtual ~PlanningResultResource() {
-    }
-
-    /// \brief Get all the transforms the results are storing. Depending on the optimization, can be more than just the robot
-    virtual void GetEnvironmentState(EnvironmentState& envstate);
-
-    /** \brief Gets the raw program information
-
-        \param[in] programtype The type of program to return. Possible values are:
-        - auto - special type that returns the most suited programs
-        - mujinxml - \b xml
-        - melfabasicv - \b json with Mitsubishi-specific programs
-        - densowaverc8pac - \b json with DensoWave-specific programs
-        - cecrobodiasim - zip file
-
-        If \b auto is set, then the robot-maker specific program is returned if possible. If not possible, then mujin xml is returned. All the programs for all robots planned are returned.
-
-        \param[out] outputdata The raw program data
-     */
-    virtual void GetAllRawProgramData(std::string& outputdata, const std::string& programtype="auto");
-
-    /** \brief Gets the raw program information of a specific robot, if supported.
-
-       \param[in] robotpk The primary key of the robot instance in the scene.
-       \param[out] outputdata The raw program data
-       \param[in] programtype The type of program to return.
-       \throw mujin_exception If robot program is not supported, will throw an exception
-     */
-    virtual void GetRobotRawProgramData(std::string& outputdata, const std::string& robotpk, const std::string& programtype="auto");
-
-    /// \brief Gets parsed program information
-    ///
-    /// If the robot doesn't have a recognizable controller, then no programs might be returned.
-    /// \param[out] programs The programs for each robot. The best suited program for each robot is determined from its controller.
-    /// \param[in] programtype The type of program to return.
-    virtual void GetPrograms(RobotControllerPrograms& programs, const std::string& programtype="auto");
 };
 
 class MUJINCLIENT_API DebugResource : public WebResource

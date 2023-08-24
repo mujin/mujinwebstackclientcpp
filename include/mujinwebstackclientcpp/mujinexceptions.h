@@ -19,7 +19,7 @@
 
 namespace mujinclient {
 
-#include <mujincontrollerclient/config.h>
+#include <mujinwebstackclientcpp/config.h>
 
 /// \brief exception throw when user interrupts the function
 class MUJINCLIENT_API UserInterruptException : public std::exception

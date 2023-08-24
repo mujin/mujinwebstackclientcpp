@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "common.h"
-#include "controllerclientimpl.h"
+#include "webstackclientimpl.h"
 #include <boost/thread.hpp> // for sleep
 #include <boost/algorithm/string.hpp>
 
-#include <mujincontrollerclient/binpickingtask.h>
-
-#ifdef MUJIN_USEZMQ
-#include "binpickingtaskzmq.h"
-#endif
 
 #include "logging.h"
-#include "mujincontrollerclient/mujinjson.h"
+#include "mujinwebstackclientcpp/mujinjson.h"
 
-MUJIN_LOGGER("mujin.controllerclientcpp");
+MUJIN_LOGGER("mujin.webstackclientcpp");
 
 namespace mujinclient {
 
 using namespace mujinjson;
 
-void ControllerClientInfo::Reset()
+void WebstackClientInfo::Reset()
 {
     host.clear();
     httpPort = 0;
@@ -41,7 +36,7 @@ void ControllerClientInfo::Reset()
     unixEndpoint.clear();
 }
 
-void ControllerClientInfo::LoadFromJson(const rapidjson::Value& rClientInfo)
+void WebstackClientInfo::LoadFromJson(const rapidjson::Value& rClientInfo)
 {
     mujinjson::LoadJsonValueByKey(rClientInfo, "host", host);
     mujinjson::LoadJsonValueByKey(rClientInfo, "httpPort", httpPort);
@@ -51,7 +46,7 @@ void ControllerClientInfo::LoadFromJson(const rapidjson::Value& rClientInfo)
     mujinjson::LoadJsonValueByKey(rClientInfo, "unixEndpoint", unixEndpoint);
 }
 
-void ControllerClientInfo::SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const
+void WebstackClientInfo::SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const
 {
     rClientInfo.SetObject();
     if( !host.empty() ) {
@@ -74,12 +69,12 @@ void ControllerClientInfo::SaveToJson(rapidjson::Value& rClientInfo, rapidjson::
     }
 }
 
-void ControllerClientInfo::SaveToJson(rapidjson::Document& rClientInfo) const
+void WebstackClientInfo::SaveToJson(rapidjson::Document& rClientInfo) const
 {
     SaveToJson(rClientInfo, rClientInfo.GetAllocator());
 }
 
-bool ControllerClientInfo::operator==(const ControllerClientInfo &rhs) const
+bool WebstackClientInfo::operator==(const WebstackClientInfo &rhs) const
 {
     return host == rhs.host &&
            httpPort == rhs.httpPort &&
@@ -89,7 +84,7 @@ bool ControllerClientInfo::operator==(const ControllerClientInfo &rhs) const
            unixEndpoint == rhs.unixEndpoint;
 }
 
-std::string ControllerClientInfo::GetURL(bool bIncludeNamePassword) const
+std::string WebstackClientInfo::GetURL(bool bIncludeNamePassword) const
 {
     std::string url;
     if( host.empty() ) {
@@ -177,7 +172,7 @@ void SerializeEnvironmentStateToJSON(const EnvironmentState& envstate, std::ostr
     os << "]";
 }
 
-WebResource::WebResource(ControllerClientPtr controller, const std::string& resourcename, const std::string& pk) : __controller(controller), __resourcename(resourcename), __pk(pk)
+WebResource::WebResource(WebstackClientPtr controller, const std::string& resourcename, const std::string& pk) : __controller(controller), __resourcename(resourcename), __pk(pk)
 {
     BOOST_ASSERT(__pk.size()>0);
 }
@@ -211,23 +206,23 @@ void WebResource::Copy(const std::string& newname, int options, double timeout)
     throw MujinException("not implemented yet");
 }
 
-ObjectResource::ObjectResource(ControllerClientPtr controller, const std::string& pk_) : WebResource(controller, "object", pk_), pk(pk_)
+ObjectResource::ObjectResource(WebstackClientPtr controller, const std::string& pk_) : WebResource(controller, "object", pk_), pk(pk_)
 {
 }
 
-ObjectResource::ObjectResource(ControllerClientPtr controller, const std::string& resource, const std::string& pk_) : WebResource(controller, resource, pk_), pk(pk_)
+ObjectResource::ObjectResource(WebstackClientPtr controller, const std::string& resource, const std::string& pk_) : WebResource(controller, resource, pk_), pk(pk_)
 {
 }
 
-ObjectResource::LinkResource::LinkResource(ControllerClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/link")%objectpk_), pk_), pk(pk_), objectpk(objectpk_)
+ObjectResource::LinkResource::LinkResource(WebstackClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/link")%objectpk_), pk_), pk(pk_), objectpk(objectpk_)
 {
 }
 
-ObjectResource::GeometryResource::GeometryResource(ControllerClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/geometry")%objectpk_), pk_), pk(pk_), objectpk(objectpk_)
+ObjectResource::GeometryResource::GeometryResource(WebstackClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/geometry")%objectpk_), pk_), pk(pk_), objectpk(objectpk_)
 {
 }
 
-ObjectResource::IkParamResource::IkParamResource(ControllerClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/ikparam")%objectpk_), pk_), pk(pk_)
+ObjectResource::IkParamResource::IkParamResource(WebstackClientPtr controller, const std::string& objectpk_, const std::string& pk_) : WebResource(controller, str(boost::format("object/%s/ikparam")%objectpk_), pk_), pk(pk_)
 {
 }
 
@@ -494,11 +489,11 @@ void ObjectResource::GetIkParams(std::vector<ObjectResource::IkParamResourcePtr>
     }
 }
 
-RobotResource::RobotResource(ControllerClientPtr controller, const std::string& pk_) : ObjectResource(controller, "robot", pk_)
+RobotResource::RobotResource(WebstackClientPtr controller, const std::string& pk_) : ObjectResource(controller, "robot", pk_)
 {
 }
 
-RobotResource::ToolResource::ToolResource(ControllerClientPtr controller, const std::string& robotobjectpk, const std::string& pk_) : WebResource(controller, str(boost::format("robot/%s/tool")%robotobjectpk), pk_), pk(pk_)
+RobotResource::ToolResource::ToolResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk_) : WebResource(controller, str(boost::format("robot/%s/tool")%robotobjectpk), pk_), pk(pk_)
 {
 }
 
@@ -525,7 +520,7 @@ void RobotResource::GetTools(std::vector<RobotResource::ToolResourcePtr>& tools)
     }
 }
 
-RobotResource::AttachedSensorResource::AttachedSensorResource(ControllerClientPtr controller, const std::string& robotobjectpk, const std::string& pk_) : WebResource(controller, str(boost::format("robot/%s/attachedsensor")%robotobjectpk), pk_), pk(pk_)
+RobotResource::AttachedSensorResource::AttachedSensorResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk_) : WebResource(controller, str(boost::format("robot/%s/attachedsensor")%robotobjectpk), pk_), pk(pk_)
 {
 }
 
@@ -620,7 +615,7 @@ void RobotResource::GetAttachedSensors(std::vector<AttachedSensorResourcePtr>& a
     }
 }
 
-SceneResource::InstObject::InstObject(ControllerClientPtr controller, const std::string& scenepk, const std::string& pk_) : WebResource(controller, str(boost::format("scene/%s/instobject")%scenepk), pk_), pk(pk_)
+SceneResource::InstObject::InstObject(WebstackClientPtr controller, const std::string& scenepk, const std::string& pk_) : WebResource(controller, str(boost::format("scene/%s/instobject")%scenepk), pk_), pk(pk_)
 {
 }
 
@@ -714,75 +709,10 @@ void SceneResource::InstObject::ReleaseObject(InstObjectPtr grabbedobject, std::
 
 }
 
-SceneResource::SceneResource(ControllerClientPtr controller, const std::string& pk) : WebResource(controller, "scene", pk)
+SceneResource::SceneResource(WebstackClientPtr controller, const std::string& pk) : WebResource(controller, "scene", pk)
 {
     // get something from the scene?
     //this->Get("");
-}
-
-TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("scene/%s/task/?format=json&limit=1&name=%s&fields=pk,tasktype")%GetPrimaryKey()%controller->EscapeString(taskname)), pt);
-    // task exists
-    std::string pk;
-
-    std::string tasktype_internal = tasktype;
-    if( tasktype == "realtimeitlplanning" ) {
-        tasktype_internal = "realtimeitlplanning3";
-    }
-
-    if (pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0) {
-        rapidjson::Value& objects = pt["objects"];
-        pk = GetJsonValueByKey<std::string>(objects[0], "pk");
-        std::string currenttasktype = GetJsonValueByKey<std::string>(objects[0], "tasktype");
-        if( currenttasktype != tasktype_internal && (currenttasktype != "realtimeitlplanning" || tasktype_internal != "realtimeitlplanning3")) {
-            throw MUJIN_EXCEPTION_FORMAT("task pk %s exists and has type %s, expected is %s", pk%currenttasktype%tasktype_internal, MEC_InvalidState);
-        }
-    }
-    else {
-        pt.SetObject();
-        controller->CallPost(str(boost::format("scene/%s/task/?format=json&fields=pk")%GetPrimaryKey()), str(boost::format("{\"name\":\"%s\", \"tasktype\":\"%s\", \"scenepk\":\"%s\"}")%taskname%tasktype_internal%GetPrimaryKey()), pt);
-        LoadJsonValueByKey(pt, "pk", pk);
-    }
-
-    if( pk.size() == 0 ) {
-        return TaskResourcePtr();
-    }
-
-    if( tasktype_internal == "binpicking" || tasktype_internal == "realtimeitlplanning3") {
-        BinPickingTaskResourcePtr task;
-        if( options & 1 ) {
-#ifdef MUJIN_USEZMQ
-            task.reset(new BinPickingTaskZmqResource(GetController(), pk, GetPrimaryKey(), tasktype_internal));
-#else
-            throw MujinException("cannot create binpicking zmq task since not compiled with zeromq library", MEC_Failed);
-#endif
-        }
-        else {
-            task.reset(new BinPickingTaskResource(GetController(), pk, GetPrimaryKey()));
-        }
-        return task;
-    }
-    else if( tasktype_internal == "cablepicking" ) { // TODO create CablePickingTaskResource
-        BinPickingTaskResourcePtr task;
-        if( options & 1 ) {
-#ifdef MUJIN_USEZMQ
-            task.reset(new BinPickingTaskZmqResource(GetController(), pk, GetPrimaryKey()));
-#else
-            throw MujinException("cannot create binpicking zmq task since not compiled with zeromq library", MEC_Failed);
-#endif
-        }
-        else {
-            task.reset(new BinPickingTaskResource(GetController(), pk, GetPrimaryKey()));
-        }
-        return task;
-    }
-    else {
-        TaskResourcePtr task(new TaskResource(GetController(), pk));
-        return task;
-    }
 }
 
 void SceneResource::SetInstObjectsState(const std::vector<SceneResource::InstObjectPtr>& instobjects, const std::vector<InstanceObjectState>& states)
@@ -813,46 +743,6 @@ void SceneResource::SetInstObjectsState(const std::vector<SceneResource::InstObj
     std::string data = str(boost::format("{\"objects\": [%s]}")%datastring);
     rapidjson::Document pt;
     controller->CallPutJSON(str(boost::format("%s/%s/instobject/?format=json")%GetResourceName()%GetPrimaryKey()), data, pt);
-}
-
-TaskResourcePtr SceneResource::GetTaskFromName_UTF8(const std::string& taskname, int options)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("scene/%s/task/?format=json&limit=1&name=%s&fields=pk,tasktype")%GetPrimaryKey()%controller->EscapeString(taskname)), pt);
-    // task exists
-
-    if (!(pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0)) {
-        throw MUJIN_EXCEPTION_FORMAT("could not find task with name %s", taskname, MEC_InvalidState);
-    }
-
-    std::string pk = GetJsonValueByKey<std::string>(pt["objects"][0], "pk");
-    TaskResourcePtr task(new TaskResource(GetController(), pk));
-    return task;
-}
-
-TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype, int options)
-{
-    std::string taskname_utf8;
-    utf8::utf16to8(taskname.begin(), taskname.end(), std::back_inserter(taskname_utf8));
-    return GetOrCreateTaskFromName_UTF8(taskname_utf8, tasktype, options);
-}
-
-TaskResourcePtr SceneResource::GetTaskFromName_UTF16(const std::wstring& taskname, int options)
-{
-    std::string taskname_utf8;
-    utf8::utf16to8(taskname.begin(), taskname.end(), std::back_inserter(taskname_utf8));
-    return GetTaskFromName_UTF8(taskname_utf8, options);
-}
-
-BinPickingTaskResourcePtr SceneResource::GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)
-{
-    return boost::dynamic_pointer_cast<BinPickingTaskResource>(GetOrCreateTaskFromName_UTF8(taskname, tasktype, options));
-}
-
-BinPickingTaskResourcePtr SceneResource::GetOrCreateBinPickingTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype, int options)
-{
-    return boost::dynamic_pointer_cast<BinPickingTaskResource>(GetOrCreateTaskFromName_UTF16(taskname, tasktype, options));
 }
 
 void SceneResource::GetTaskPrimaryKeys(std::vector<std::string>& taskkeys)
@@ -1056,25 +946,6 @@ SceneResourcePtr SceneResource::Copy(const std::string& name)
     return scene;
 }
 
-TaskResource::TaskResource(ControllerClientPtr controller, const std::string& pk) : WebResource(controller,"task",pk)
-{
-}
-
-bool TaskResource::Execute()
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallPost("job/", str(boost::format("{\"resource_type\":\"task\", \"target_pk\":%s}")%GetPrimaryKey()), pt, 200);
-    _jobpk = GetJsonValueByKey<std::string>(pt, "jobpk");
-    return true;
-}
-
-void TaskResource::Cancel()
-{
-    // have to look through all jobs for the task
-    BOOST_ASSERT(0);
-}
-
 JobStatusCode GetStatusCode(const std::string& str)
 {
     MUJIN_LOG_INFO(str);
@@ -1092,182 +963,7 @@ JobStatusCode GetStatusCode(const std::string& str)
     throw MUJIN_EXCEPTION_FORMAT("unknown staus %s", str, MEC_InvalidArguments);
 }
 
-void TaskResource::GetRunTimeStatus(JobStatus& status, int options)
-{
-    status.code = JSC_Unknown;
-    if( _jobpk.size() > 0 ) {
-        GETCONTROLLERIMPL();
-        rapidjson::Document pt(rapidjson::kObjectType);
-        std::string url = str(boost::format("job/%s/?format=json&fields=pk,status,fnname,elapsedtime")%_jobpk);
-        if( options & 1 ) {
-            url += std::string(",status_text");
-        }
-        controller->CallGet(url, pt);
-        //pt.get("error_message")
-        LoadJsonValueByKey(pt, "pk", status.pk);
-        //LoadJsonValueByKey(pt, "status", status.code);
-        status.code  = GetStatusCode(GetJsonValueByKey<std::string>(pt, "status"));
-        LoadJsonValueByKey(pt, "elapsedtime", status.elapsedtime);
-        LoadJsonValueByKey(pt, "fname", status.type);
-        if( options & 1 ) {
-            LoadJsonValueByKey(pt, "status_text", status.message);
-        }
-    }
-}
-
-OptimizationResourcePtr TaskResource::GetOrCreateOptimizationFromName_UTF8(const std::string& optimizationname, const std::string& optimizationtype)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("task/%s/optimization/?format=json&limit=1&name=%s&fields=pk,optimizationtype")%GetPrimaryKey()%controller->EscapeString(optimizationname)), pt);
-    // optimization exists
-    if (pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0) {
-        rapidjson::Value& object = pt["objects"][0];
-        std::string pk = GetJsonValueByKey<std::string>(object, "pk");
-        std::string currentoptimizationtype = GetJsonValueByKey<std::string>(object, "optimizationtype");
-        if( currentoptimizationtype != optimizationtype ) {
-            throw MUJIN_EXCEPTION_FORMAT("optimization pk %s exists and has type %s, expected is %s", pk%currentoptimizationtype%optimizationtype, MEC_InvalidState);
-        }
-        OptimizationResourcePtr optimization(new OptimizationResource(GetController(), pk));
-        return optimization;
-    }
-
-    pt.SetObject();
-    controller->CallPost(str(boost::format("task/%s/optimization/?format=json&fields=pk")%GetPrimaryKey()), str(boost::format("{\"name\":\"%s\", \"optimizationtype\":\"%s\", \"taskpk\":\"%s\"}")%optimizationname%optimizationtype%GetPrimaryKey()), pt);
-    std::string pk = GetJsonValueByKey<std::string>(pt, "pk");
-    OptimizationResourcePtr optimization(new OptimizationResource(GetController(), pk));
-    return optimization;
-}
-
-OptimizationResourcePtr TaskResource::GetOrCreateOptimizationFromName_UTF16(const std::wstring& optimizationname, const std::string& optimizationtype)
-{
-    std::string optimizationname_utf8;
-    utf8::utf16to8(optimizationname.begin(), optimizationname.end(), std::back_inserter(optimizationname_utf8));
-    return GetOrCreateOptimizationFromName_UTF8(optimizationname_utf8, optimizationtype);
-}
-
-void TaskResource::GetOptimizationPrimaryKeys(std::vector<std::string>& optimizationkeys)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("task/%s/optimization/?format=json&limit=0&fields=pk")%GetPrimaryKey()), pt);
-    rapidjson::Value& objects = pt["objects"];
-
-    optimizationkeys.resize(objects.Size());
-    size_t i = 0;
-    for (rapidjson::Document::ValueIterator it = objects.Begin(); it != objects.End(); ++it) {
-        LoadJsonValueByKey(*it, "pk", optimizationkeys[i++]);
-    }
-}
-
-void TaskResource::GetTaskParameters(ITLPlanningTaskParameters& taskparameters)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("task/%s/?format=json&fields=taskparameters,tasktype")%GetPrimaryKey()), pt);
-    std::string tasktype = GetJsonValueByKey<std::string>(pt, "tasktype");
-    if( tasktype != "itlplanning" ) {
-        throw MUJIN_EXCEPTION_FORMAT("task %s is type %s, expected itlplanning", GetPrimaryKey()%tasktype, MEC_InvalidArguments);
-    }
-    rapidjson::Value& taskparametersjson = pt["taskparameters"];
-    taskparameters.SetDefaults();
-    bool bhasreturnmode = false, bhasreturntostart = false, breturntostart = false;
-    for (rapidjson::Document::MemberIterator v = taskparametersjson.MemberBegin(); v != taskparametersjson.MemberEnd(); ++v) {
-        if( std::string(v->name.GetString()) == "startfromcurrent" ) {
-            taskparameters.startfromcurrent = std::string("True") == v->value.GetString();
-        }
-        else if(std::string(v->name.GetString()) == "returntostart" ) {
-            bhasreturntostart = true;
-            breturntostart = std::string("True") == v->value.GetString();
-        }
-        else if( std::string(v->name.GetString()) == "returnmode" ) {
-            taskparameters.returnmode = v->value.GetString();
-            bhasreturnmode = true;
-        }
-        else if( std::string(v->name.GetString()) == "ignorefigure" ) {
-            taskparameters.ignorefigure = std::string("True") == v->value.GetString();
-        }
-        else if( std::string(v->name.GetString()) == "vrcruns" ) {
-            //taskparameters.vrcruns = boost::lexical_cast<int>(v->value);
-            LoadJsonValueByKey(taskparametersjson, "vrcruns", taskparameters.vrcruns);
-        }
-        else if( std::string(v->name.GetString()) == "unit" ) {
-            taskparameters.unit = v->value.GetString();
-        }
-        else if( std::string(v->name.GetString()) == "optimizationvalue" ) {
-            LoadJsonValueByKey(taskparametersjson, "optimizationvalue", taskparameters.optimizationvalue);
-            //taskparameters.optimizationvalue = boost::lexical_cast<Real>(v->second.data());
-        }
-        else if( std::string(v->name.GetString()) == "program" ) {
-            taskparameters.program = v->value.GetString();
-        }
-        else if( std::string(v->name.GetString()) == "parameters" ) {
-            taskparameters.parameters = DumpJson(v->value,2);
-        }
-        else if( std::string(v->name.GetString()) == "initial_envstate" ) {
-            ExtractEnvironmentStateFromPTree(v->value, taskparameters.initial_envstate);
-        }
-        else if( std::string(v->name.GetString()) == "final_envstate" ) {
-            ExtractEnvironmentStateFromPTree(v->value, taskparameters.final_envstate);
-        }
-        else {
-            std::stringstream ss;
-            ss << "unsupported ITL task parameter " << v->name.GetString();
-            MUJIN_LOG_ERROR(ss.str());
-        }
-    }
-    // for back compat
-    if( !bhasreturnmode && bhasreturntostart ) {
-        taskparameters.returnmode = breturntostart ? "start" : "";
-    }
-}
-
-void TaskResource::SetTaskParameters(const ITLPlanningTaskParameters& taskparameters)
-{
-    GETCONTROLLERIMPL();
-    std::string startfromcurrent = taskparameters.startfromcurrent ? "True" : "False";
-    std::string ignorefigure = taskparameters.ignorefigure ? "True" : "False";
-    std::string vrcruns = boost::lexical_cast<std::string>(taskparameters.vrcruns);
-
-    std::stringstream ssinitial_envstate;
-    if( taskparameters.initial_envstate.size() > 0 ) {
-        ssinitial_envstate << std::setprecision(std::numeric_limits<Real>::digits10+1);
-        ssinitial_envstate << ", \"initial_envstate\":";
-        SerializeEnvironmentStateToJSON(taskparameters.initial_envstate, ssinitial_envstate);
-    }
-    std::stringstream ssfinal_envstate;
-    if( taskparameters.final_envstate.size() > 0 ) {
-        ssfinal_envstate << std::setprecision(std::numeric_limits<Real>::digits10+1);
-        ssfinal_envstate << ", \"final_envstate\":";
-        SerializeEnvironmentStateToJSON(taskparameters.final_envstate, ssfinal_envstate);
-    }
-
-    // because program will inside string, encode newlines
-    std::string program;
-    std::vector< std::pair<std::string, std::string> > serachpairs(3);
-    serachpairs[0].first = "\""; serachpairs[0].second = "\\\"";
-    serachpairs[1].first = "\n"; serachpairs[1].second = "\\n";
-    serachpairs[2].first = "\r\n"; serachpairs[2].second = "\\n";
-    SearchAndReplace(program, taskparameters.program, serachpairs);
-    std::string taskgoalput = str(boost::format("{\"tasktype\": \"itlplanning\", \"taskparameters\":{\"optimizationvalue\":%f, \"program\":\"%s\", \"parameters\":%s, \"unit\":\"%s\", \"returnmode\":\"%s\", \"startfromcurrent\":\"%s\", \"ignorefigure\":\"%s\", \"vrcruns\":%d %s %s } }")%taskparameters.optimizationvalue%program%taskparameters.parameters%taskparameters.unit%taskparameters.returnmode%startfromcurrent%ignorefigure%vrcruns%ssinitial_envstate.str()%ssfinal_envstate.str());
-    rapidjson::Document pt;
-    controller->CallPutJSON(str(boost::format("task/%s/?format=json&fields=")%GetPrimaryKey()), taskgoalput, pt);
-}
-
-PlanningResultResourcePtr TaskResource::GetResult()
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("task/%s/result/?format=json&limit=1&optimization=None&fields=pk")%GetPrimaryKey()), pt);
-    if (!(pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0) ) {
-        return PlanningResultResourcePtr();
-    }
-    std::string pk = GetJsonValueByKey<std::string>(pt["objects"][0], "pk");
-    PlanningResultResourcePtr result(new PlanningResultResource(GetController(), pk));
-    return result;
-}
-
-OptimizationResource::OptimizationResource(ControllerClientPtr controller, const std::string& pk) : WebResource(controller,"optimization",pk)
+OptimizationResource::OptimizationResource(WebstackClientPtr controller, const std::string& pk) : WebResource(controller,"optimization",pk)
 {
 }
 
@@ -1334,70 +1030,12 @@ void OptimizationResource::SetOptimizationParameters(const PlacementsOptimizatio
     controller->CallPutJSON(str(boost::format("optimization/%s/?format=json&fields=")%GetPrimaryKey()), optimizationgoalput.str(), pt);
 }
 
-void OptimizationResource::GetResults(std::vector<PlanningResultResourcePtr>& results, int startoffset, int num)
-{
-    GETCONTROLLERIMPL();
-    std::string querystring = str(boost::format("optimization/%s/result/?format=json&fields=pk&order_by=task_time&offset=%d&limit=%d")%GetPrimaryKey()%startoffset%num);
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(querystring, pt);
-    if (!(pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0)) {
-        return;
-    }
-    rapidjson::Value& objects = pt["objects"];
-    results.resize(objects.Size());
-    size_t i = 0;
-    for (rapidjson::Document::ValueIterator it = objects.Begin(); it != objects.End(); ++it) {
-        results[i++].reset(new PlanningResultResource(controller, GetJsonValueByKey<std::string>(*it, "pk")));
-    }
-}
 
-PlanningResultResource::PlanningResultResource(ControllerClientPtr controller, const std::string& resulttype, const std::string& pk) : WebResource(controller,resulttype,pk)
+DebugResource::DebugResource(WebstackClientPtr controller, const std::string& pk_) : WebResource(controller, "debug", pk_), pk(pk_)
 {
 }
 
-PlanningResultResource::PlanningResultResource(ControllerClientPtr controller, const std::string& pk) : WebResource(controller,"planningresult",pk)
-{
-}
-
-void PlanningResultResource::GetEnvironmentState(EnvironmentState& envstate)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("%s/%s/?format=json&fields=envstate")%GetResourceName()%GetPrimaryKey()), pt);
-    ExtractEnvironmentStateFromPTree(pt["envstate"], envstate);
-}
-
-void PlanningResultResource::GetAllRawProgramData(std::string& outputdata, const std::string& programtype)
-{
-    GETCONTROLLERIMPL();
-    controller->CallGet(str(boost::format("%s/%s/program/?type=%s")%GetResourceName()%GetPrimaryKey()%programtype), outputdata);
-}
-
-void PlanningResultResource::GetRobotRawProgramData(std::string& outputdata, const std::string& robotpk, const std::string& programtype)
-{
-    GETCONTROLLERIMPL();
-    controller->CallGet(str(boost::format("%s/%s/program/%s/?type=%s")%GetResourceName()%GetPrimaryKey()%robotpk%programtype), outputdata);
-}
-
-void PlanningResultResource::GetPrograms(RobotControllerPrograms& programs, const std::string& programtype)
-{
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    programs.programs.clear();
-    controller->CallGet(str(boost::format("%s/%s/program/?format=json&type=%s")%GetResourceName()%GetPrimaryKey()%programtype), pt);
-    for (rapidjson::Document::MemberIterator it = pt.MemberBegin(); it != pt.MemberEnd(); ++it) {
-        std::string robotpk = it->name.GetString();
-        std::string program = GetJsonValueByKey<std::string>(it->value, "program");
-        std::string currenttype = GetJsonValueByKey<std::string>(it->value, "type");
-        programs.programs[robotpk] = RobotProgramData(program, currenttype);
-    }
-}
-
-DebugResource::DebugResource(ControllerClientPtr controller, const std::string& pk_) : WebResource(controller, "debug", pk_), pk(pk_)
-{
-}
-
-DebugResource::DebugResource(ControllerClientPtr controller, const std::string& resource, const std::string& pk_) : WebResource(controller, resource, pk_), pk(pk_)
+DebugResource::DebugResource(WebstackClientPtr controller, const std::string& resource, const std::string& pk_) : WebResource(controller, resource, pk_), pk(pk_)
 {
 }
 
@@ -1407,17 +1045,17 @@ void DebugResource::Download(std::ostream& outputStream, double timeout)
     controller->CallGet(str(boost::format("%s/%s/download/")%GetResourceName()%GetPrimaryKey()), outputStream, 200, timeout);
 }
 
-ControllerClientPtr CreateControllerClient(const std::string& usernamepassword, const std::string& baseurl, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
+WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& baseurl, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout)
 {
-    return ControllerClientPtr(new ControllerClientImpl(usernamepassword, baseurl, proxyserverport, proxyuserpw, options, timeout));
+    return WebstackClientPtr(new WebstackClientImpl(usernamepassword, baseurl, proxyserverport, proxyuserpw, options, timeout));
 }
 
-void ControllerClientDestroy()
+void WebstackClientDestroy()
 {
-    DestroyControllerClient();
+    DestroyWebstackClient();
 }
 
-void DestroyControllerClient()
+void DestroyWebstackClient()
 {
 }
 

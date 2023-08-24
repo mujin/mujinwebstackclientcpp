@@ -15,11 +15,11 @@
 
     Includes basic struct, enum, and other definitions that are used throughout the Mujin Controller system.
  */
-#ifndef MUJIN_CONTROLLERCLIENT_DEFINITIONS_H
-#define MUJIN_CONTROLLERCLIENT_DEFINITIONS_H
+#ifndef MUJIN_WEBSTACKCLIENT_DEFINITIONS_H
+#define MUJIN_WEBSTACKCLIENT_DEFINITIONS_H
 
-#include <mujincontrollerclient/config.h>
-#include <mujincontrollerclient/mujinjson.h>
+#include <mujinwebstackclientcpp/config.h>
+#include <mujinwebstackclientcpp/mujinjson.h>
 
 #include <ostream>
 

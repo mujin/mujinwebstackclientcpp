@@ -20,13 +20,13 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#include <mujincontrollerclient/zmq.hpp>
-#include <mujincontrollerclient/mujinexceptions.h>
+#include <mujinwebstackclientcpp/zmq.hpp>
+#include <mujinwebstackclientcpp/mujinexceptions.h>
 
 namespace mujinzmq
 {
 
-#include "mujincontrollerclient/config.h"
+#include "mujinwebstackclientcpp/config.h"
 
 /** \brief Base class for subscriber
  */

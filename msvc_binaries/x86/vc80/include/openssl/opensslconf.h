@@ -85,8 +85,8 @@
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "F:\\controllerclientcpp\\msvc_binaries\\vc80/lib/engines"
-#define OPENSSLDIR "F:\\controllerclientcpp\\msvc_binaries\\vc80/ssl"
+#define ENGINESDIR "F:\\webstackclientcpp\\msvc_binaries\\vc80/lib/engines"
+#define OPENSSLDIR "F:\\webstackclientcpp\\msvc_binaries\\vc80/ssl"
 #endif
 #endif
 
