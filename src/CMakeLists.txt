@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${CURL_INCLUDE_DIRS} ${LOG4CXX_INCLUDEDIR})
+include_directories(${CURL_INCLUDE_DIRS} ${LOG4CXX_INCLUDEDIR} ${MujinPlanningClient_INCLUDE_DIRS})
 if (libzmq_FOUND)
   include_directories(${libzmq_INCLUDE_DIRS})
 endif()
 
-link_directories(${MUJINWEBSTACKCLIENT_LINK_DIRS})
+link_directories(${MUJINWEBSTACKCLIENT_LINK_DIRS} ${MujinPlanningClient_LIBRARY_DIRS})
 
 set(SOURCE_FILES
   boost_assertion_failed.cpp
@@ -26,8 +26,6 @@ set(SOURCE_FILES
   webstackclientimpl.cpp
   webstackclientimpl.h
   webstackclient.cpp
-  mujindefinitions.cpp
-  mujinjson.cpp
   utf8.h )
 
 add_library(libmujinwebstackclient SHARED ${SOURCE_FILES})
@@ -42,7 +40,7 @@ set_target_properties(libmujinwebstackclient PROPERTIES COMPILE_FLAGS "${EXTRA_C
   CLEAN_DIRECT_OUTPUT 1
   )
 
-target_link_libraries(libmujinwebstackclient ${CURL_LIBRARIES} ${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY}  ${EXTRA_LIBRARIES} ${libzmq_LIBRARIES} ${LOG4CXX_LIBRARIES})
+target_link_libraries(libmujinwebstackclient ${CURL_LIBRARIES} ${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${MujinPlanningClient_LIBRARIES} ${EXTRA_LIBRARIES} ${libzmq_LIBRARIES} ${LOG4CXX_LIBRARIES})
 if( MSVC )
   install(TARGETS libmujinwebstackclient RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
 else()

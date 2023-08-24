@@ -113,11 +113,11 @@ void ConvertTimestampToFloat(const std::string& in,
         const std::size_t closingCurly = in.substr(timestampbegin, len).find("}");
         if (comma == std::string::npos && closingCurly == std::string::npos)
         {
-            throw mujinwebstackclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinwebstackclient::MEC_Failed);
+            throw mujinclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinclient::MEC_Failed);
         }
         const std::size_t timestampend = timestampbegin + (comma < closingCurly ? comma : closingCurly);
         if (timestampend == std::string::npos) {
-            throw mujinwebstackclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinwebstackclient::MEC_Failed);
+            throw mujinclient::MujinException(boost::str(boost::format("error while converting timestamp value format for %s")%in), mujinclient::MEC_Failed);
         }
         const std::size_t period = in.substr(timestampbegin, len).find(".");
 

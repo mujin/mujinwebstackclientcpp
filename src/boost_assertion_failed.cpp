@@ -15,13 +15,13 @@ namespace boost
 {
 HIDDEN void assertion_failed(char const * expr, char const * function, char const * file, long line)
 {
-    throw mujinwebstackclient::MujinException((boost::format("[%s:%d] -> %s, expr: %s")%file%line%function%expr).str(),mujinwebstackclient::MEC_Assert);
+    throw mujinclient::MujinException((boost::format("[%s:%d] -> %s, expr: %s")%file%line%function%expr).str(),mujinclient::MEC_Assert);
 }
 
 #if BOOST_VERSION>104600
 HIDDEN void assertion_failed_msg(char const * expr, char const * msg, char const * function, char const * file, long line)
 {
-    throw mujinwebstackclient::MujinException((boost::format("[%s:%d] -> %s, expr: %s, msg: %s")%file%line%function%expr%msg).str(),mujinwebstackclient::MEC_Assert);
+    throw mujinclient::MujinException((boost::format("[%s:%d] -> %s, expr: %s, msg: %s")%file%line%function%expr%msg).str(),mujinclient::MEC_Assert);
 }
 #endif
 } // namespace boost

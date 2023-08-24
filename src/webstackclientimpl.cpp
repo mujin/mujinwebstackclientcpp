@@ -36,6 +36,7 @@ MUJIN_LOGGER("mujin.webstackclientcpp");
 namespace mujinwebstackclient {
 
 using namespace mujinjson;
+using namespace mujinclient;
 
 /// \brief given a port string "80", fill WebstackClientInfo httpPort
 static void _ParseClientInfoPort(const char* port, size_t length, WebstackClientInfo& clientInfo)

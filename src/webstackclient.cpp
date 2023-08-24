@@ -185,7 +185,7 @@ void WebResource::GetWrap(rapidjson::Document& pt, const std::string& field, dou
 
 void WebResource::Set(const std::string& field, const std::string& newvalue, double timeout)
 {
-    throw MujinException("not implemented");
+    throw mujinclient::MujinException("not implemented");
 }
 
 void WebResource::SetJSON(const std::string& json, double timeout)
@@ -203,7 +203,7 @@ void WebResource::Delete(double timeout)
 
 void WebResource::Copy(const std::string& newname, int options, double timeout)
 {
-    throw MujinException("not implemented yet");
+    throw mujinclient::MujinException("not implemented yet");
 }
 
 ObjectResource::ObjectResource(WebstackClientPtr controller, const std::string& pk_) : WebResource(controller, "object", pk_), pk(pk_)
@@ -242,7 +242,7 @@ void ObjectResource::GeometryResource::SetGeometryFromRawSTL(const std::vector<u
 {
     GETCONTROLLERIMPL();
     if (this->geomtype != "mesh") {
-        throw MUJIN_EXCEPTION_FORMAT("geomtype is not mesh: %s", this->geomtype, MEC_InvalidArguments);
+        throw MUJIN_EXCEPTION_FORMAT("geomtype is not mesh: %s", this->geomtype, mujinclient::MEC_InvalidArguments);
     }
     controller->SetObjectGeometryMesh(this->objectpk, this->pk, rawstldata, unit, timeout);
 }
@@ -309,7 +309,7 @@ ObjectResource::GeometryResourcePtr ObjectResource::LinkResource::GetGeometryFro
             }
         }
     }
-    throw MUJIN_EXCEPTION_FORMAT("link %s does not have geometry named %s", this->name%geometryName, MEC_InvalidArguments);
+    throw MUJIN_EXCEPTION_FORMAT("link %s does not have geometry named %s", this->name%geometryName, mujinclient::MEC_InvalidArguments);
 }
 
 void ObjectResource::LinkResource::GetGeometries(std::vector<ObjectResource::GeometryResourcePtr>& geometries)
@@ -719,7 +719,7 @@ void SceneResource::SetInstObjectsState(const std::vector<SceneResource::InstObj
 {
     GETCONTROLLERIMPL();
     if (instobjects.size() != states.size()) {
-        throw MUJIN_EXCEPTION_FORMAT("the size of instobjects (%d) and the one of states (%d) must be the same",instobjects.size()%states.size(),MEC_InvalidArguments);
+        throw MUJIN_EXCEPTION_FORMAT("the size of instobjects (%d) and the one of states (%d) must be the same",instobjects.size()%states.size(),mujinclient::MEC_InvalidArguments);
     }
     boost::format transformtemplate("{\"pk\":\"%s\",\"quaternion\":[%.15f, %.15f, %.15f, %.15f], \"translate\":[%.15f, %.15f, %.15f] %s}");
     std::string datastring, sdofvalues;
@@ -960,7 +960,7 @@ JobStatusCode GetStatusCode(const std::string& str)
     if (str == "recalled") return JSC_Recalled;
     if (str == "lost") return JSC_Lost;
     if (str == "unknown") return JSC_Unknown;
-    throw MUJIN_EXCEPTION_FORMAT("unknown staus %s", str, MEC_InvalidArguments);
+    throw MUJIN_EXCEPTION_FORMAT("unknown staus %s", str, mujinclient::MEC_InvalidArguments);
 }
 
 OptimizationResource::OptimizationResource(WebstackClientPtr controller, const std::string& pk) : WebResource(controller,"optimization",pk)
@@ -1061,7 +1061,7 @@ void DestroyWebstackClient()
 
 void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform)
 {
-    throw MujinException("not implemented yet");
+    throw mujinclient::MujinException("not implemented yet");
 //    length2 = numpy.sum(quat**2)
 //    ilength2 = 2.0/length2
 //    qq1 = ilength2*quat[1]*quat[1]
@@ -1081,7 +1081,7 @@ void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform)
 
 void ComputeZXYFromMatrix(Real ZXY[3], Real matrix[12])
 {
-    throw MujinException("not implemented yet");
+    throw mujinclient::MujinException("not implemented yet");
 //    if abs(T[2][0]) < 1e-10 and abs(T[2][2]) < 1e-10:
 //        sinx = T[2][1]
 //        x = numpy.pi/2 if sinx > 0 else -numpy.pi/2
@@ -1100,7 +1100,7 @@ void ComputeZXYFromMatrix(Real ZXY[3], Real matrix[12])
 
 void ComputeZXYFromTransform(Real ZXY[3], const Transform& transform)
 {
-    throw MujinException("not implemented yet");
+    throw mujinclient::MujinException("not implemented yet");
     //zxyFromMatrix(matrixFromTransform())
 }
 

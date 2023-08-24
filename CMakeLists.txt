@@ -55,6 +55,9 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
 # which point to directories outside the build tree to the install RPATH
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# We use the planning client for common defintions.
+find_package(MujinPlanningClient REQUIRED)
+
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 include(CheckLibraryExists)
@@ -317,7 +320,7 @@ else()
 endif()
 
 file(GLOB mujin_header_files ${CMAKE_CURRENT_SOURCE_DIR}/include/mujinwebstackclientcpp/*.h ${CMAKE_CURRENT_SOURCE_DIR}/include/mujinwebstackclientcpp/*.hpp)
-install(FILES ${mujin_header_files} ${CMAKE_CURRENT_BINARY_DIR}/include/mujinwebstackclientcpp/config.h DESTINATION include/mujinwebstackclient)
+install(FILES ${mujin_header_files} ${CMAKE_CURRENT_BINARY_DIR}/include/mujinwebstackclientcpp/config.h DESTINATION include/mujinwebstackclientcpp)
 
 macro(build_sample name)
   include_directories(${LOG4CXX_INCLUDEDIR} ${libzmq_INCLUDE_DIRS})
