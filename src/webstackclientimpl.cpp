@@ -33,7 +33,7 @@ MUJIN_LOGGER("mujin.webstackclientcpp");
 #define CURL_PERFORM(curl) CHECKCURLCODE(curl_easy_perform(curl), "curl_easy_perform")
 #define CURL_FORM_RELEASER(form) boost::shared_ptr<void> __curlformreleaser ## form((void*)0, boost::bind(boost::function<void(decltype(form))>(curl_formfree), form))
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 using namespace mujinjson;
 
@@ -242,7 +242,7 @@ WebstackClientImpl::WebstackClientImpl(const std::string& usernamepassword, cons
     // CURL_OPTION_SETTER(_curl, CURLOPT_WRITEFUNCTION, _WriteStringStreamCallback); // just to start the cookie engine
     // CURL_OPTION_SETTER(_curl, CURLOPT_WRITEDATA, &_buffer);
 
-    std::string useragent = std::string("webstackclientcpp/")+MUJINCLIENT_VERSION_STRING;
+    std::string useragent = std::string("webstackclientcpp/")+MUJINWEBSTACKCLIENT_VERSION_STRING;
     CURL_OPTION_SETTER(_curl, CURLOPT_USERAGENT, useragent.c_str());
 
     CURL_OPTION_SETTER(_curl, CURLOPT_FOLLOWLOCATION, 1L); // we can always follow redirect now, we don't need to detect login page
@@ -437,7 +437,7 @@ void WebstackClientImpl::_ExecuteGraphQuery(const char* operationName, const cha
                     if (itExtensions != rError.MemberEnd() && itExtensions->value.IsObject() && itExtensions->value.HasMember("errorCode") && itExtensions->value["errorCode"].IsString()) {
                         errorCode = itExtensions->value["errorCode"].GetString();
                     }
-                    throw mujinclient::MujinGraphQueryError(boost::str(boost::format("[%s:%d] graph query has errors \"%s\": %s")%(__PRETTY_FUNCTION__)%(__LINE__)%operationName%rError["message"].GetString()), errorCode);
+                    throw mujinwebstackclient::MujinGraphQueryError(boost::str(boost::format("[%s:%d] graph query has errors \"%s\": %s")%(__PRETTY_FUNCTION__)%(__LINE__)%operationName%rError["message"].GetString()), errorCode);
                 }
             }
             throw MUJIN_EXCEPTION_FORMAT("graph query has undefined errors \"%s\": %s", operationName%mujinjson::DumpJson(rResultDoc), MEC_HTTPServer);
@@ -2070,4 +2070,4 @@ void WebstackClientImpl::ListFilesInController(std::vector<FileEntry>& fileentri
     }
 }
 
-} // end namespace mujinclient
+} // end namespace mujinwebstackclient

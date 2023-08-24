@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-using namespace mujinclient;
+using namespace mujinwebstackclient;
 
 int main(int argc, char ** argv)
 {

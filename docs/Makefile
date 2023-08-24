@@ -1,7 +1,7 @@
-mujinclient_version=0.6.3
+mujinwebstackclient_version=0.6.3
 doxycommands="STRIP_FROM_PATH = $(PWD)\\n\
-PROJECT_NUMBER = $(mujinclient_version)\\n\
-ALIASES += mujinclientversion=$(mujinclient_version)\\n\
+PROJECT_NUMBER = $(mujinwebstackclient_version)\\n\
+ALIASES += mujinwebstackclientversion=$(mujinwebstackclient_version)\\n\
 "
 
 .PHONY: html_% html clean clean_doxygen

@@ -18,11 +18,11 @@
 
 
 #include "logging.h"
-#include "mujinwebstackclientcpp/mujinjson.h"
+#include "mujinplanningclient/mujinjson.h"
 
 MUJIN_LOGGER("mujin.webstackclientcpp");
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 using namespace mujinjson;
 

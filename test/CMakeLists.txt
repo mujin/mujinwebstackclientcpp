@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-include_directories(${MUJINCLIENT_INCLUDE_LOCAL_DIRS})
-link_directories(${MUJINCLIENT_LINK_DIRS})
+include_directories(${MUJINWEBSTACKCLIENT_INCLUDE_LOCAL_DIRS})
+link_directories(${MUJINWEBSTACKCLIENT_LINK_DIRS})
 
 remove_definitions("-DBOOST_ENABLE_ASSERT_HANDLER")
 

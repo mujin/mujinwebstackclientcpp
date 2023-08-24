@@ -1,7 +1,7 @@
 // -*- coding: utf-8 -*-
 #include "mujintestutils.h"
 
-using namespace mujinclient;
+using namespace mujinwebstackclient;
 
 int main(int argc, char ** argv)
 {

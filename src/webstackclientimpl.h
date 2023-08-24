@@ -21,7 +21,7 @@
 
 #include <boost/enable_shared_from_this.hpp>
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 class WebstackClientImpl : public WebstackClient, public boost::enable_shared_from_this<WebstackClientImpl>
 {
@@ -296,6 +296,6 @@ protected:
 
 typedef boost::shared_ptr<WebstackClientImpl> WebstackClientImplPtr;
 
-} // end namespace mujinclient
+} // end namespace mujinwebstackclient
 
 #endif

@@ -1,4 +1,4 @@
-#include "mujinwebstackclientcpp/mujinzmq.h"
+#include "mujinplanningclient/mujinzmq.h"
 
 #include <boost/thread.hpp>
 #if BOOST_VERSION > 104800
@@ -128,7 +128,7 @@ inline static uint64_t GetNanoPerformanceTime()
 
 
 using namespace mujinzmq;
-using namespace mujinclient;
+using namespace mujinwebstackclient;
 
 ZmqSubscriber::ZmqSubscriber(const std::string& host, const unsigned int port)
 {
@@ -344,7 +344,7 @@ std::string ZmqClient::Call(const std::string& msg, const double timeout, const 
                 serachpairs[0].first = "\""; serachpairs[0].second = "";
                 serachpairs[1].first = "\\"; serachpairs[1].second = "";
                 std::string errstr;
-                mujinclient::SearchAndReplace(errstr, ss.str(), serachpairs);
+                mujinwebstackclient::SearchAndReplace(errstr, ss.str(), serachpairs);
 #endif
                 throw MujinException(errstr, MEC_Timeout);
             }

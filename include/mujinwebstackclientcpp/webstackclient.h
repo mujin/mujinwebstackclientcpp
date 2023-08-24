@@ -32,9 +32,9 @@
 #endif
 
 #if defined(__GNUC__)
-#define MUJINCLIENT_DEPRECATED __attribute__((deprecated))
+#define MUJINWEBSTACKCLIENT_DEPRECATED __attribute__((deprecated))
 #else
-#define MUJINCLIENT_DEPRECATED
+#define MUJINWEBSTACKCLIENT_DEPRECATED
 #endif
 
 #include <cmath>
@@ -56,15 +56,15 @@
 #include <boost/format.hpp>
 #include <boost/array.hpp>
 #include <mujinwebstackclientcpp/config.h>
-#include <mujinwebstackclientcpp/mujinexceptions.h>
-#include <mujinwebstackclientcpp/mujinjson.h>
-#include <mujinwebstackclientcpp/mujindefinitions.h>
+#include <mujinplanningclient/mujinexceptions.h>
+#include <mujinplanningclient/mujinjson.h>
+#include <mujinplanningclient/mujindefinitions.h>
 
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 /// \brief connecting to a controller's webstack
-class MUJINCLIENT_API WebstackClientInfo : public mujinjson::JsonSerializable
+class MUJINWEBSTACKCLIENT_API WebstackClientInfo : public mujinjson::JsonSerializable
 {
 public:
     virtual void Reset();
@@ -309,7 +309,7 @@ public:
 /// \brief Creates on MUJIN Controller instance.
 ///
 /// Only one call can be made at a time. In order to make multiple calls simultaneously, create another instance.
-class MUJINCLIENT_API WebstackClient
+class MUJINWEBSTACKCLIENT_API WebstackClient
 {
 public:
     virtual ~WebstackClient() {
@@ -686,7 +686,7 @@ public:
     virtual void GetDebugInfos(std::vector<DebugResourcePtr>& debuginfos, double timeout = 5) = 0;
 };
 
-class MUJINCLIENT_API WebResource
+class MUJINWEBSTACKCLIENT_API WebResource
 {
 public:
     WebResource(WebstackClientPtr controller, const std::string& resourcename, const std::string& pk);
@@ -730,10 +730,10 @@ private:
     std::string __resourcename, __pk;
 };
 
-class MUJINCLIENT_API ObjectResource : public WebResource
+class MUJINWEBSTACKCLIENT_API ObjectResource : public WebResource
 {
 public:
-    class MUJINCLIENT_API GeometryResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API GeometryResource : public WebResource {
 public:
         GeometryResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~GeometryResource() {
@@ -762,7 +762,7 @@ public:
     };
     typedef boost::shared_ptr<GeometryResource> GeometryResourcePtr;
 
-    class MUJINCLIENT_API IkParamResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API IkParamResource : public WebResource {
 public:
         IkParamResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~IkParamResource() {
@@ -777,7 +777,7 @@ public:
     };
     typedef boost::shared_ptr<IkParamResource> IkParamResourcePtr;
 
-    class MUJINCLIENT_API LinkResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API LinkResource : public WebResource {
 public:
         LinkResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~LinkResource() {
@@ -846,10 +846,10 @@ protected:
 
 };
 
-class MUJINCLIENT_API RobotResource : public ObjectResource
+class MUJINWEBSTACKCLIENT_API RobotResource : public ObjectResource
 {
 public:
-    class MUJINCLIENT_API ToolResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API ToolResource : public WebResource {
 public:
         ToolResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
         virtual ~ToolResource() {
@@ -865,7 +865,7 @@ public:
     };
     typedef boost::shared_ptr<ToolResource> ToolResourcePtr;
 
-    class MUJINCLIENT_API AttachedSensorResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API AttachedSensorResource : public WebResource {
 public:
         AttachedSensorResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
         virtual ~AttachedSensorResource() {
@@ -920,27 +920,27 @@ public:
     std::string simulation_file;
 };
 
-class MUJINCLIENT_API SceneResource : public WebResource
+class MUJINWEBSTACKCLIENT_API SceneResource : public WebResource
 {
 public:
     class InstObject;
     typedef boost::shared_ptr<InstObject> InstObjectPtr;
     /// \brief nested resource in the scene describe an object in the scene
-    class MUJINCLIENT_API InstObject : public WebResource
+    class MUJINWEBSTACKCLIENT_API InstObject : public WebResource
     {
 public:
         InstObject(WebstackClientPtr controller, const std::string& scenepk, const std::string& pk);
         virtual ~InstObject() {
         }
 
-        class MUJINCLIENT_API Link {
+        class MUJINWEBSTACKCLIENT_API Link {
 public:
             std::string name;
             Real quaternion[4]; // quaternion [w, x, y, z] = [cos(angle/2), sin(angle/2)*rotation_axis]
             Real translate[3];
         };
 
-        class MUJINCLIENT_API Tool {
+        class MUJINWEBSTACKCLIENT_API Tool {
 public:
             std::string name;
             Real direction[3];
@@ -948,7 +948,7 @@ public:
             Real translate[3];
         };
 
-        class MUJINCLIENT_API Grab {
+        class MUJINWEBSTACKCLIENT_API Grab {
 public:
             std::string instobjectpk; ///< grabed_instobject_pk
             std::string grabbed_linkpk;
@@ -968,7 +968,7 @@ public:
             }
         };
 
-        class MUJINCLIENT_API AttachedSensor {
+        class MUJINWEBSTACKCLIENT_API AttachedSensor {
 public:
             std::string name;
             Real quaternion[4]; // quaternion [w, x, y, z] = [cos(angle/2), sin(angle/2)*rotation_axis]
@@ -1035,7 +1035,7 @@ public:
 };
 
 
-class MUJINCLIENT_API OptimizationResource : public WebResource
+class MUJINWEBSTACKCLIENT_API OptimizationResource : public WebResource
 {
 public:
     OptimizationResource(WebstackClientPtr controller, const std::string& pk);
@@ -1067,7 +1067,7 @@ protected:
     std::string _jobpk; ///< the job primary key used to track the status of the running optimization after \ref Execute is called
 };
 
-class MUJINCLIENT_API DebugResource : public WebResource
+class MUJINWEBSTACKCLIENT_API DebugResource : public WebResource
 {
 public:
     DebugResource(WebstackClientPtr controller, const std::string& pk);
@@ -1108,16 +1108,16 @@ protected:
     \param options １が指定されたら、クライアントがGETのみを呼び出し出来ます。それで初期化がもっと速くなれます。
     \param timeout set timeout in seconds for the initial login requests
  */
-MUJINCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
+MUJINWEBSTACKCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
 
 /// \brief called at the very end of an application to safely destroy all controller client resources
-MUJINCLIENT_API void DestroyWebstackClient();
+MUJINWEBSTACKCLIENT_API void DestroyWebstackClient();
 
 /// \deprecated 14/03/14
-MUJINCLIENT_API void WebstackClientDestroy() MUJINCLIENT_DEPRECATED;
+MUJINWEBSTACKCLIENT_API void WebstackClientDestroy() MUJINWEBSTACKCLIENT_DEPRECATED;
 
 /// \brief Compute a 3x4 matrix from a Transform
-MUJINCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform);
+MUJINWEBSTACKCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform);
 
 /** \brief Compute Euler angles in ZXY order (T = Z*X*Y) from a 3x4 matrix
 
@@ -1131,17 +1131,17 @@ MUJINCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform
     [                       -sin(y)*cos(x),         sin(x),                         cos(x)*cos(y)]
 
  */
-MUJINCLIENT_API void ComputeZXYFromMatrix(Real ZXY[3], const Real matrix[12]);
+MUJINWEBSTACKCLIENT_API void ComputeZXYFromMatrix(Real ZXY[3], const Real matrix[12]);
 
-MUJINCLIENT_API void ComputeZXYFromTransform(Real ZXY[3], const Transform &transform);
+MUJINWEBSTACKCLIENT_API void ComputeZXYFromTransform(Real ZXY[3], const Transform &transform);
 
-MUJINCLIENT_API void SerializeEnvironmentStateToJSON(const EnvironmentState& envstate, std::ostream& os);
+MUJINWEBSTACKCLIENT_API void SerializeEnvironmentStateToJSON(const EnvironmentState& envstate, std::ostream& os);
 
 
-} // namespace mujinclient
+} // namespace mujinwebstackclient
 
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MAJOR>=0&&MUJINCLIENT_VERSION_MAJOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MINOR>=0&&MUJINCLIENT_VERSION_MINOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_PATCH>=0&&MUJINCLIENT_VERSION_PATCH<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MAJOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MAJOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MINOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MINOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_PATCH>=0&&MUJINWEBSTACKCLIENT_VERSION_PATCH<=255);
 
 #endif
