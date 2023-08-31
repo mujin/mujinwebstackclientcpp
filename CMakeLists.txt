@@ -34,8 +34,8 @@ cmake_policy(SET CMP0002 NEW)
 # http://www.cmake.org/cmake/help/cmake-2.6.html#policy:CMP0003
 cmake_policy(SET CMP0003 NEW)
 
-option(OPT_SAMPLES "Build the samples" OFF)
-option(OPT_BUILD_TESTS "Build the tests" OFF)
+option(OPT_SAMPLES "Build the samples" ON)
+option(OPT_BUILD_TESTS "Build the tests" ON)
 option(OPT_BUILD_STATIC "Build static libraries for the client" ON)
 option(OPT_LOG4CXX "Use log4cxx for logging" ON)
 
@@ -339,8 +339,6 @@ endif()
 if( OPT_BUILD_TESTS )
   add_subdirectory(test)
 endif()
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share/mujinwebstackclient DESTINATION share)
 
 # add make uninstall capability
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
