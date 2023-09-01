@@ -105,6 +105,7 @@ class WebstackClient;
 class ObjectResource;
 class RobotResource;
 class SceneResource;
+class TaskResource;
 class OptimizationResource;
 class DebugResource;
 
@@ -124,6 +125,10 @@ typedef boost::shared_ptr<RobotResource> RobotResourcePtr;
 typedef boost::weak_ptr<RobotResource> RobotResourceWeakPtr;
 typedef boost::shared_ptr<SceneResource> SceneResourcePtr;
 typedef boost::weak_ptr<SceneResource> SceneResourceWeakPtr;
+typedef boost::shared_ptr<TaskResource> TaskResourcePtr;
+typedef boost::weak_ptr<TaskResource> TaskResourceWeakPtr;
+typedef boost::shared_ptr<OptimizationResource> OptimizationResourcePtr;
+typedef boost::weak_ptr<OptimizationResource> OptimizationResourceWeakPtr;
 typedef boost::shared_ptr<DebugResource> DebugResourcePtr;
 typedef boost::weak_ptr<DebugResource> DebugResourceWeakPtr;
 typedef double Real;
@@ -1032,6 +1037,50 @@ public:
     virtual SceneResourcePtr Copy(const std::string& name);
 };
 
+class MUJINWEBSTACKCLIENT_API TaskResource : public WebResource
+{
+public:
+    TaskResource(WebstackClientPtr controller, const std::string& pk);
+    virtual ~TaskResource() {
+    }
+
+    /// \brief execute the task.
+    ///
+    /// This operation is non-blocking and will return immediately after the execution is started. In order to check if the task is running or is complete, use \ref GetRunTimeStatus() and \ref GetResult()
+    /// \return true if task was executed fine
+    virtual bool Execute();
+
+    /// \brief if the task is currently executing, send a cancel request
+    virtual void Cancel();
+
+    /// \brief get the run-time status of the executed task.
+    ///
+    /// This will only work if the task has been previously Executed with execute
+    /// If the task is not currently running, will set status.code to JSC_Unknown
+    /// \param options if options is 1, also get the message
+    virtual void GetRunTimeStatus(JobStatus& status, int options = 1);
+
+    /// \brief Gets or creates the a optimization part of the scene
+    ///
+    /// \param optimizationname the name of the optimization to search for or create
+    /// \param optimizaitontype The type of optimization, can be "robotplacement" or "placements"
+    virtual OptimizationResourcePtr GetOrCreateOptimizationFromName_UTF8(const std::string& optimizationname, const std::string& optimizationtype=std::string("robotplacement"));
+
+    /// \brief \see GetOrCreateOptimizationFromName_UTF8
+    virtual OptimizationResourcePtr GetOrCreateOptimizationFromName_UTF16(const std::wstring& optimizationname, const std::string& optimizationtype=std::string("robotplacement"));
+
+    /// \brief gets a list of all the scene primary keys currently available to the user
+    virtual void GetOptimizationPrimaryKeys(std::vector<std::string>& optimizationkeys);
+
+    /// \brief Get the task info for tasks of type <b>itlplanning</b>
+    virtual void GetTaskParameters(ITLPlanningTaskParameters& taskparameters);
+
+    /// \brief Set new task info for tasks of type <b>itlplanning</b>
+    virtual void SetTaskParameters(const ITLPlanningTaskParameters& taskparameters);
+
+protected:
+    std::string _jobpk; ///< the job primary key used to track the status of the running task after \ref Execute is called
+};
 
 class MUJINWEBSTACKCLIENT_API OptimizationResource : public WebResource
 {
