@@ -438,7 +438,7 @@ void WebstackClientImpl::_ExecuteGraphQuery(const char* operationName, const cha
                     if (itExtensions != rError.MemberEnd() && itExtensions->value.IsObject() && itExtensions->value.HasMember("errorCode") && itExtensions->value["errorCode"].IsString()) {
                         errorCode = itExtensions->value["errorCode"].GetString();
                     }
-                    throw mujinwebstackclient::MujinGraphQueryError(boost::str(boost::format("[%s:%d] graph query has errors \"%s\": %s")%(__PRETTY_FUNCTION__)%(__LINE__)%operationName%rError["message"].GetString()), errorCode);
+                    throw mujinclient::MujinGraphQueryError(boost::str(boost::format("[%s:%d] graph query has errors \"%s\": %s")%(__PRETTY_FUNCTION__)%(__LINE__)%operationName%rError["message"].GetString()), errorCode);
                 }
             }
             throw MUJIN_EXCEPTION_FORMAT("graph query has undefined errors \"%s\": %s", operationName%mujinjson::DumpJson(rResultDoc), MEC_HTTPServer);
