@@ -715,6 +715,41 @@ SceneResource::SceneResource(WebstackClientPtr controller, const std::string& pk
     //this->Get("");
 }
 
+TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)
+{
+    GETCONTROLLERIMPL();
+    rapidjson::Document pt(rapidjson::kObjectType);
+    controller->CallGet(str(boost::format("scene/%s/task/?format=json&limit=1&name=%s&fields=pk,tasktype")%GetPrimaryKey()%controller->EscapeString(taskname)), pt);
+    // task exists
+    std::string pk;
+
+    std::string tasktype_internal = tasktype;
+    if( tasktype == "realtimeitlplanning" ) {
+        tasktype_internal = "realtimeitlplanning3";
+    }
+
+    if (pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0) {
+        rapidjson::Value& objects = pt["objects"];
+        pk = GetJsonValueByKey<std::string>(objects[0], "pk");
+        std::string currenttasktype = GetJsonValueByKey<std::string>(objects[0], "tasktype");
+        if( currenttasktype != tasktype_internal && (currenttasktype != "realtimeitlplanning" || tasktype_internal != "realtimeitlplanning3")) {
+            throw MUJIN_EXCEPTION_FORMAT("task pk %s exists and has type %s, expected is %s", pk%currenttasktype%tasktype_internal, mujinclient::MEC_InvalidState);
+        }
+    }
+    else {
+        pt.SetObject();
+        controller->CallPost(str(boost::format("scene/%s/task/?format=json&fields=pk")%GetPrimaryKey()), str(boost::format("{\"name\":\"%s\", \"tasktype\":\"%s\", \"scenepk\":\"%s\"}")%taskname%tasktype_internal%GetPrimaryKey()), pt);
+        LoadJsonValueByKey(pt, "pk", pk);
+    }
+
+    if( pk.size() == 0 ) {
+        return TaskResourcePtr();
+    }
+
+    TaskResourcePtr task(new TaskResource(GetController(), pk));
+    return task;
+}
+
 void SceneResource::SetInstObjectsState(const std::vector<SceneResource::InstObjectPtr>& instobjects, const std::vector<InstanceObjectState>& states)
 {
     GETCONTROLLERIMPL();
@@ -743,6 +778,13 @@ void SceneResource::SetInstObjectsState(const std::vector<SceneResource::InstObj
     std::string data = str(boost::format("{\"objects\": [%s]}")%datastring);
     rapidjson::Document pt;
     controller->CallPutJSON(str(boost::format("%s/%s/instobject/?format=json")%GetResourceName()%GetPrimaryKey()), data, pt);
+}
+
+TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype, int options)
+{
+    std::string taskname_utf8;
+    utf8::utf16to8(taskname.begin(), taskname.end(), std::back_inserter(taskname_utf8));
+    return GetOrCreateTaskFromName_UTF8(taskname_utf8, tasktype, options);
 }
 
 mujinplanningclient::MujinPlanningClientPtr SceneResource::GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)

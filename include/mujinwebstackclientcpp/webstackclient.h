@@ -1011,6 +1011,14 @@ public:
 
     virtual mujinplanningclient::MujinPlanningClientPtr GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype="binpicking", int options=0);
     virtual mujinplanningclient::MujinPlanningClientPtr GetOrCreateBinPickingTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype="binpicking", int options=0);
+    /** \brief Gets or creates the a task part of the scene
+        If task exists already, validates it with tasktype.
+        \param taskname utf-8 encoded name of the task to search for or create. If the name already exists and is not tasktype, an exception is thrown
+        \param tasktype The type of task to create. Supported types are:
+        - itlplanning
+     */
+    virtual TaskResourcePtr GetOrCreateTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options=0);
+    virtual TaskResourcePtr GetOrCreateTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype, int options=0);
 
     /// \brief gets a list of all the scene primary keys currently available to the user
     virtual void GetTaskPrimaryKeys(std::vector<std::string>& taskkeys);
