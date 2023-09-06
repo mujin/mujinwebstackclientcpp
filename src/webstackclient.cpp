@@ -789,34 +789,12 @@ TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF16(const std::wstring&
 
 mujinplanningclient::MujinPlanningClientPtr SceneResource::GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)
 {
-    GETCONTROLLERIMPL();
-    rapidjson::Document pt(rapidjson::kObjectType);
-    controller->CallGet(str(boost::format("scene/%s/task/?format=json&limit=1&name=%s&fields=pk,tasktype")%GetPrimaryKey()%controller->EscapeString(taskname)), pt);
-    // task exists
-    std::string pk;
-
     std::string tasktype_internal = tasktype;
     if( tasktype == "realtimeitlplanning" ) {
         tasktype_internal = "realtimeitlplanning3";
     }
 
-    if (pt.IsObject() && pt.HasMember("objects") && pt["objects"].IsArray() && pt["objects"].Size() > 0) {
-        rapidjson::Value& objects = pt["objects"];
-        pk = GetJsonValueByKey<std::string>(objects[0], "pk");
-        std::string currenttasktype = GetJsonValueByKey<std::string>(objects[0], "tasktype");
-        if( currenttasktype != tasktype_internal && (currenttasktype != "realtimeitlplanning" || tasktype_internal != "realtimeitlplanning3")) {
-            throw MUJIN_EXCEPTION_FORMAT("task pk %s exists and has type %s, expected is %s", pk%currenttasktype%tasktype_internal, mujinclient::MEC_InvalidState);
-        }
-    }
-    else {
-        pt.SetObject();
-        controller->CallPost(str(boost::format("scene/%s/task/?format=json&fields=pk")%GetPrimaryKey()), str(boost::format("{\"name\":\"%s\", \"tasktype\":\"%s\", \"scenepk\":\"%s\"}")%taskname%tasktype_internal%GetPrimaryKey()), pt);
-        LoadJsonValueByKey(pt, "pk", pk);
-    }
-
-    if( pk.size() == 0 ) {
-        return nullptr;
-    }
+    GetOrCreateTaskFromName_UTF8(taskname, tasktype, options);
 
     return mujinplanningclient::CreatePlanningClient(GetPrimaryKey(), tasktype_internal, controller->GetBaseURI(), controller->GetUserName());
 }
