@@ -789,6 +789,7 @@ TaskResourcePtr SceneResource::GetOrCreateTaskFromName_UTF16(const std::wstring&
 
 mujinplanningclient::MujinPlanningClientPtr SceneResource::GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options)
 {
+    GETCONTROLLERIMPL();
     std::string tasktype_internal = tasktype;
     if( tasktype == "realtimeitlplanning" ) {
         tasktype_internal = "realtimeitlplanning3";
