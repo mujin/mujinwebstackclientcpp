@@ -1,14 +1,14 @@
 // -*- coding: utf-8 -*-
 #include "mujintestutils.h"
 
-using namespace mujinclient;
+using namespace mujinwebstackclient;
 
 int main(int argc, char ** argv)
 {
     try {
-        ControllerClientPtr controller = CreateControllerFromCommandLine(argc,argv);
+        WebstackClientPtr controller = CreateControllerFromCommandLine(argc,argv);
 
-        std::string sourcefilename_utf8 = "../share/mujincontrollerclient/robodia_demo1/robodia_demo1.xml";
+        std::string sourcefilename_utf8 = "../share/webstackclientcpp/robodia_demo1/robodia_demo1.xml";
         std::string uridir_utf8 = "mujin:/testupload/";
         std::string uri_utf8 = "mujin:/testupload/robodia_demo1.xml";
 
@@ -27,5 +27,5 @@ int main(int argc, char ** argv)
     catch(const MujinException& ex) {
         std::cout << "exception thrown: " << ex.message() << std::endl;
     }
-    ControllerClientDestroy();
+    WebstackClientDestroy();
 }
