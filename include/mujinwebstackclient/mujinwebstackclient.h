@@ -12,11 +12,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/** \file mujincontrollerclient.h
+/** \file mujinwebstackclient.h
     \brief  Defines the public headers of the MUJIN Controller Client
  */
-#ifndef MUJIN_CONTROLLERCLIENT_H
-#define MUJIN_CONTROLLERCLIENT_H
+#ifndef MUJIN_WEBSTACKCLIENT_H
+#define MUJIN_WEBSTACKCLIENT_H
 
 #ifdef _MSC_VER
 
@@ -32,9 +32,9 @@
 #endif
 
 #if defined(__GNUC__)
-#define MUJINCLIENT_DEPRECATED __attribute__((deprecated))
+#define MUJINWEBSTACKCLIENT_DEPRECATED __attribute__((deprecated))
 #else
-#define MUJINCLIENT_DEPRECATED
+#define MUJINWEBSTACKCLIENT_DEPRECATED
 #endif
 
 #include <cmath>
@@ -55,16 +55,19 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/format.hpp>
 #include <boost/array.hpp>
-#include <mujincontrollerclient/config.h>
-#include <mujincontrollerclient/mujinexceptions.h>
-#include <mujincontrollerclient/mujinjson.h>
-#include <mujincontrollerclient/mujindefinitions.h>
+
+#include <mujinwebstackclient/config.h>
+
+#include <mujinplanningclient/mujinplanningclient.h>
+#include <mujinplanningclient/mujinexceptions.h>
+#include <mujinplanningclient/mujinjson.h>
+#include <mujinplanningclient/mujindefinitions.h>
 
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
 /// \brief connecting to a controller's webstack
-class MUJINCLIENT_API ControllerClientInfo : public mujinjson::JsonSerializable
+class MUJINWEBSTACKCLIENT_API WebstackClientInfo : public mujinjson::JsonSerializable
 {
 public:
     virtual void Reset();
@@ -73,8 +76,8 @@ public:
     void SaveToJson(rapidjson::Value& rClientInfo, rapidjson::Document::AllocatorType& alloc) const override;
     void SaveToJson(rapidjson::Document& rClientInfo) const override;
 
-    bool operator==(const ControllerClientInfo &rhs) const;
-    bool operator!=(const ControllerClientInfo &rhs) const {
+    bool operator==(const WebstackClientInfo &rhs) const;
+    bool operator!=(const WebstackClientInfo &rhs) const {
         return !operator==(rhs);
     }
     std::string GetURL(bool bIncludeNamePassword) const;
@@ -98,15 +101,12 @@ enum TaskResourceOptions
     TRO_EnableZMQ=1, ///< create a task resource with zeromq client
 };
 
-class ControllerClient;
+class WebstackClient;
 class ObjectResource;
 class RobotResource;
 class SceneResource;
 class TaskResource;
-class BinPickingTaskResource;
 class OptimizationResource;
-class PlanningResultResource;
-class BinPickingResultResource;
 class DebugResource;
 
 /// \brief (scene) file entry in mujin controller
@@ -117,8 +117,8 @@ struct FileEntry
     size_t size = 0; // file size in bytes
 };
 
-typedef boost::shared_ptr<ControllerClient> ControllerClientPtr;
-typedef boost::weak_ptr<ControllerClient> ControllerClientWeakPtr;
+typedef boost::shared_ptr<WebstackClient> WebstackClientPtr;
+typedef boost::weak_ptr<WebstackClient> WebstackClientWeakPtr;
 typedef boost::shared_ptr<ObjectResource> ObjectResourcePtr;
 typedef boost::weak_ptr<ObjectResource> ObjectResourceWeakPtr;
 typedef boost::shared_ptr<RobotResource> RobotResourcePtr;
@@ -127,14 +127,8 @@ typedef boost::shared_ptr<SceneResource> SceneResourcePtr;
 typedef boost::weak_ptr<SceneResource> SceneResourceWeakPtr;
 typedef boost::shared_ptr<TaskResource> TaskResourcePtr;
 typedef boost::weak_ptr<TaskResource> TaskResourceWeakPtr;
-typedef boost::shared_ptr<BinPickingTaskResource> BinPickingTaskResourcePtr;
-typedef boost::weak_ptr<BinPickingTaskResource> BinPickingTaskResourceWeakPtr;
 typedef boost::shared_ptr<OptimizationResource> OptimizationResourcePtr;
 typedef boost::weak_ptr<OptimizationResource> OptimizationResourceWeakPtr;
-typedef boost::shared_ptr<PlanningResultResource> PlanningResultResourcePtr;
-typedef boost::weak_ptr<PlanningResultResource> PlanningResultResourceWeakPtr;
-typedef boost::shared_ptr<BinPickingResultResource> BinPickingResultResourcePtr;
-typedef boost::weak_ptr<BinPickingResultResource> BinPickingResultResourceWeakPtr;
 typedef boost::shared_ptr<DebugResource> DebugResourcePtr;
 typedef boost::weak_ptr<DebugResource> DebugResourceWeakPtr;
 typedef double Real;
@@ -351,10 +345,10 @@ public:
 /// \brief Creates on MUJIN Controller instance.
 ///
 /// Only one call can be made at a time. In order to make multiple calls simultaneously, create another instance.
-class MUJINCLIENT_API ControllerClient
+class MUJINWEBSTACKCLIENT_API WebstackClient
 {
 public:
-    virtual ~ControllerClient() {
+    virtual ~WebstackClient() {
     }
 
 //    \brief Returns a list of filenames in the user system of a particular type
@@ -400,7 +394,7 @@ public:
     virtual std::string GetURIWithUsernamePassword() const = 0;
 
     /// \brief returns the client info used to construct this client
-    virtual const ControllerClientInfo& GetClientInfo() const = 0;
+    virtual const WebstackClientInfo& GetClientInfo() const = 0;
 
     /// \brief If necessary, changes the proxy to communicate to the controller server. Setting proxy disables previously set unix endpoint.
     ///
@@ -734,14 +728,14 @@ public:
     virtual void CreateLogEntries(const std::vector<LogEntry>& logEntries, std::vector<std::string>& createdLogEntryIds, double timeout = 5) = 0;
 };
 
-class MUJINCLIENT_API WebResource
+class MUJINWEBSTACKCLIENT_API WebResource
 {
 public:
-    WebResource(ControllerClientPtr controller, const std::string& resourcename, const std::string& pk);
+    WebResource(WebstackClientPtr controller, const std::string& resourcename, const std::string& pk);
     virtual ~WebResource() {
     }
 
-    inline ControllerClientPtr GetController() const {
+    inline WebstackClientPtr GetController() const {
         return __controller;
     }
     inline const std::string& GetResourceName() const {
@@ -774,16 +768,16 @@ public:
 private:
     virtual void GetWrap(rapidjson::Document& pt, const std::string& field, double timeout = 5.0);
 
-    ControllerClientPtr __controller;
+    WebstackClientPtr __controller;
     std::string __resourcename, __pk;
 };
 
-class MUJINCLIENT_API ObjectResource : public WebResource
+class MUJINWEBSTACKCLIENT_API ObjectResource : public WebResource
 {
 public:
-    class MUJINCLIENT_API GeometryResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API GeometryResource : public WebResource {
 public:
-        GeometryResource(ControllerClientPtr controller, const std::string& objectpk, const std::string& pk);
+        GeometryResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~GeometryResource() {
         }
         std::string name;
@@ -810,9 +804,9 @@ public:
     };
     typedef boost::shared_ptr<GeometryResource> GeometryResourcePtr;
 
-    class MUJINCLIENT_API IkParamResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API IkParamResource : public WebResource {
 public:
-        IkParamResource(ControllerClientPtr controller, const std::string& objectpk, const std::string& pk);
+        IkParamResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~IkParamResource() {
         }
         std::string name;
@@ -825,9 +819,9 @@ public:
     };
     typedef boost::shared_ptr<IkParamResource> IkParamResourcePtr;
 
-    class MUJINCLIENT_API LinkResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API LinkResource : public WebResource {
 public:
-        LinkResource(ControllerClientPtr controller, const std::string& objectpk, const std::string& pk);
+        LinkResource(WebstackClientPtr controller, const std::string& objectpk, const std::string& pk);
         virtual ~LinkResource() {
         }
 
@@ -859,7 +853,7 @@ public:
     typedef boost::shared_ptr<LinkResource> LinkResourcePtr;
 
 
-    ObjectResource(ControllerClientPtr controller, const std::string& pk);
+    ObjectResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~ObjectResource() {
     }
     virtual void GetLinks(std::vector<LinkResourcePtr>& links);
@@ -890,16 +884,16 @@ public:
     Real translate[3] = {0, 0, 0};
 
 protected:
-    ObjectResource(ControllerClientPtr controller, const std::string& resource, const std::string& pk);
+    ObjectResource(WebstackClientPtr controller, const std::string& resource, const std::string& pk);
 
 };
 
-class MUJINCLIENT_API RobotResource : public ObjectResource
+class MUJINWEBSTACKCLIENT_API RobotResource : public ObjectResource
 {
 public:
-    class MUJINCLIENT_API ToolResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API ToolResource : public WebResource {
 public:
-        ToolResource(ControllerClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
+        ToolResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
         virtual ~ToolResource() {
         }
 
@@ -913,9 +907,9 @@ public:
     };
     typedef boost::shared_ptr<ToolResource> ToolResourcePtr;
 
-    class MUJINCLIENT_API AttachedSensorResource : public WebResource {
+    class MUJINWEBSTACKCLIENT_API AttachedSensorResource : public WebResource {
 public:
-        AttachedSensorResource(ControllerClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
+        AttachedSensorResource(WebstackClientPtr controller, const std::string& robotobjectpk, const std::string& pk);
         virtual ~AttachedSensorResource() {
         }
 
@@ -954,7 +948,7 @@ public:
 
     typedef boost::shared_ptr<AttachedSensorResource> AttachedSensorResourcePtr;
 
-    RobotResource(ControllerClientPtr controller, const std::string& pk);
+    RobotResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~RobotResource() {
     }
 
@@ -968,27 +962,27 @@ public:
     std::string simulation_file;
 };
 
-class MUJINCLIENT_API SceneResource : public WebResource
+class MUJINWEBSTACKCLIENT_API SceneResource : public WebResource
 {
 public:
     class InstObject;
     typedef boost::shared_ptr<InstObject> InstObjectPtr;
     /// \brief nested resource in the scene describe an object in the scene
-    class MUJINCLIENT_API InstObject : public WebResource
+    class MUJINWEBSTACKCLIENT_API InstObject : public WebResource
     {
 public:
-        InstObject(ControllerClientPtr controller, const std::string& scenepk, const std::string& pk);
+        InstObject(WebstackClientPtr controller, const std::string& scenepk, const std::string& pk);
         virtual ~InstObject() {
         }
 
-        class MUJINCLIENT_API Link {
+        class MUJINWEBSTACKCLIENT_API Link {
 public:
             std::string name;
             Real quaternion[4] = {1, 0, 0, 0}; // quaternion [w, x, y, z] = [cos(angle/2), sin(angle/2)*rotation_axis]
             Real translate[3] = {0, 0, 0};
         };
 
-        class MUJINCLIENT_API Tool {
+        class MUJINWEBSTACKCLIENT_API Tool {
 public:
             std::string name;
             Real direction[3] = {0, 0, 0};
@@ -996,7 +990,7 @@ public:
             Real translate[3] = {0, 0, 0};
         };
 
-        class MUJINCLIENT_API Grab {
+        class MUJINWEBSTACKCLIENT_API Grab {
 public:
             std::string instobjectpk; ///< grabed_instobject_pk
             std::string grabbed_linkpk;
@@ -1016,7 +1010,7 @@ public:
             }
         };
 
-        class MUJINCLIENT_API AttachedSensor {
+        class MUJINWEBSTACKCLIENT_API AttachedSensor {
 public:
             std::string name;
             Real quaternion[4] = {1, 0, 0, 0}; // quaternion [w, x, y, z] = [cos(angle/2), sin(angle/2)*rotation_axis]
@@ -1043,49 +1037,22 @@ public:
         std::vector<AttachedSensor> attachedsensors;
     };
 
-    SceneResource(ControllerClientPtr controller, const std::string& pk);
+    SceneResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~SceneResource() {
     }
 
     virtual void SetInstObjectsState(const std::vector<SceneResource::InstObjectPtr>& instobjects, const std::vector<InstanceObjectState>& states);
 
+    virtual mujinplanningclient::MujinPlanningClientPtr GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype="binpicking", int options=0);
+    virtual mujinplanningclient::MujinPlanningClientPtr GetOrCreateBinPickingTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype="binpicking", int options=0);
     /** \brief Gets or creates the a task part of the scene
-
         If task exists already, validates it with tasktype.
         \param taskname utf-8 encoded name of the task to search for or create. If the name already exists and is not tasktype, an exception is thrown
         \param tasktype The type of task to create. Supported types are:
         - itlplanning
      */
-
     virtual TaskResourcePtr GetOrCreateTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype, int options=0);
-
-    virtual TaskResourcePtr GetOrCreateTaskFromName_UTF8(const std::string& taskname, int options=0)
-    {
-        return GetOrCreateTaskFromName_UTF8(taskname, GetController()->GetDefaultTaskType(), options);
-    }
-
-    virtual TaskResourcePtr GetTaskFromName_UTF8(const std::string& taskname, int options=0);
-
-    /** \brief Gets or creates the a task part of the scene
-
-        If task exists already, validates it with tasktype.
-        \param taskname utf-16 encoded name of the task to search for or create. If the name already exists and is not tasktype, an exception is thrown
-        \param tasktype The type of task to create. Supported types are:
-        - itlplanning
-     */
     virtual TaskResourcePtr GetOrCreateTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype, int options=0);
-
-    virtual TaskResourcePtr GetOrCreateTaskFromName_UTF16(const std::wstring& taskname, int options=0)
-    {
-        return GetOrCreateTaskFromName_UTF16(taskname, GetController()->GetDefaultTaskType(), options);
-    }
-
-    virtual TaskResourcePtr GetTaskFromName_UTF16(const std::wstring& taskname, int options=0);
-
-
-    virtual BinPickingTaskResourcePtr GetOrCreateBinPickingTaskFromName_UTF8(const std::string& taskname, const std::string& tasktype="binpicking", int options=0);
-    virtual BinPickingTaskResourcePtr GetOrCreateBinPickingTaskFromName_UTF16(const std::wstring& taskname, const std::string& tasktype="binpicking", int options=0);
-
 
     /// \brief gets a list of all the scene primary keys currently available to the user
     virtual void GetTaskPrimaryKeys(std::vector<std::string>& taskkeys);
@@ -1112,10 +1079,10 @@ public:
     virtual SceneResourcePtr Copy(const std::string& name);
 };
 
-class MUJINCLIENT_API TaskResource : public WebResource
+class MUJINWEBSTACKCLIENT_API TaskResource : public WebResource
 {
 public:
-    TaskResource(ControllerClientPtr controller, const std::string& pk);
+    TaskResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~TaskResource() {
     }
 
@@ -1153,17 +1120,14 @@ public:
     /// \brief Set new task info for tasks of type <b>itlplanning</b>
     virtual void SetTaskParameters(const ITLPlanningTaskParameters& taskparameters);
 
-    /// \brief gets the result of the task execution. If no result has been computed yet, will return a NULL pointer.
-    virtual PlanningResultResourcePtr GetResult();
-
 protected:
     std::string _jobpk; ///< the job primary key used to track the status of the running task after \ref Execute is called
 };
 
-class MUJINCLIENT_API OptimizationResource : public WebResource
+class MUJINWEBSTACKCLIENT_API OptimizationResource : public WebResource
 {
 public:
-    OptimizationResource(ControllerClientPtr controller, const std::string& pk);
+    OptimizationResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~OptimizationResource() {
     }
 
@@ -1188,63 +1152,14 @@ public:
     /// \param options if options is 1, also get the message
     virtual void GetRunTimeStatus(JobStatus& status, int options = 1);
 
-    /// \brief Gets the results of the optimization execution ordered by task_time.
-    ///
-    /// \param startoffset The offset to retrieve the results from. Ordered
-    /// \param num The number of results to get starting at startoffset. If 0, will return ALL results.
-    virtual void GetResults(std::vector<PlanningResultResourcePtr>& results, int startoffset=0, int num=0);
-
 protected:
     std::string _jobpk; ///< the job primary key used to track the status of the running optimization after \ref Execute is called
 };
 
-class MUJINCLIENT_API PlanningResultResource : public WebResource
+class MUJINWEBSTACKCLIENT_API DebugResource : public WebResource
 {
 public:
-    PlanningResultResource(ControllerClientPtr controller, const std::string& resulttype, const std::string& pk);
-    PlanningResultResource(ControllerClientPtr controller, const std::string& pk);
-    virtual ~PlanningResultResource() {
-    }
-
-    /// \brief Get all the transforms the results are storing. Depending on the optimization, can be more than just the robot
-    virtual void GetEnvironmentState(EnvironmentState& envstate);
-
-    /** \brief Gets the raw program information
-
-        \param[in] programtype The type of program to return. Possible values are:
-        - auto - special type that returns the most suited programs
-        - mujinxml - \b xml
-        - melfabasicv - \b json with Mitsubishi-specific programs
-        - densowaverc8pac - \b json with DensoWave-specific programs
-        - cecrobodiasim - zip file
-
-        If \b auto is set, then the robot-maker specific program is returned if possible. If not possible, then mujin xml is returned. All the programs for all robots planned are returned.
-
-        \param[out] outputdata The raw program data
-     */
-    virtual void GetAllRawProgramData(std::string& outputdata, const std::string& programtype="auto");
-
-    /** \brief Gets the raw program information of a specific robot, if supported.
-
-       \param[in] robotpk The primary key of the robot instance in the scene.
-       \param[out] outputdata The raw program data
-       \param[in] programtype The type of program to return.
-       \throw mujin_exception If robot program is not supported, will throw an exception
-     */
-    virtual void GetRobotRawProgramData(std::string& outputdata, const std::string& robotpk, const std::string& programtype="auto");
-
-    /// \brief Gets parsed program information
-    ///
-    /// If the robot doesn't have a recognizable controller, then no programs might be returned.
-    /// \param[out] programs The programs for each robot. The best suited program for each robot is determined from its controller.
-    /// \param[in] programtype The type of program to return.
-    virtual void GetPrograms(RobotControllerPrograms& programs, const std::string& programtype="auto");
-};
-
-class MUJINCLIENT_API DebugResource : public WebResource
-{
-public:
-    DebugResource(ControllerClientPtr controller, const std::string& pk);
+    DebugResource(WebstackClientPtr controller, const std::string& pk);
     virtual ~DebugResource() {
     }
 
@@ -1260,7 +1175,7 @@ public:
     size_t size = 0;
 
 protected:
-    DebugResource(ControllerClientPtr controller, const std::string& resource, const std::string& pk);
+    DebugResource(WebstackClientPtr controller, const std::string& resource, const std::string& pk);
 };
 
 /** \en \brief creates the controller with an account. <b>This function is not thread safe.</b>
@@ -1282,16 +1197,16 @@ protected:
     \param options １が指定されたら、クライアントがGETのみを呼び出し出来ます。それで初期化がもっと速くなれます。
     \param timeout set timeout in seconds for the initial login requests
  */
-MUJINCLIENT_API ControllerClientPtr CreateControllerClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
+MUJINWEBSTACKCLIENT_API WebstackClientPtr CreateWebstackClient(const std::string& usernamepassword, const std::string& url, const std::string& proxyserverport=std::string(), const std::string& proxyuserpw=std::string(), int options=0, double timeout=3.0);
 
 /// \brief called at the very end of an application to safely destroy all controller client resources
-MUJINCLIENT_API void DestroyControllerClient();
+MUJINWEBSTACKCLIENT_API void DestroyWebstackClient();
 
 /// \deprecated 14/03/14
-MUJINCLIENT_API void ControllerClientDestroy() MUJINCLIENT_DEPRECATED;
+MUJINWEBSTACKCLIENT_API void WebstackClientDestroy() MUJINWEBSTACKCLIENT_DEPRECATED;
 
 /// \brief Compute a 3x4 matrix from a Transform
-MUJINCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform);
+MUJINWEBSTACKCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform &transform);
 
 /** \brief Compute Euler angles in ZXY order (T = Z*X*Y) from a 3x4 matrix
 
@@ -1305,17 +1220,17 @@ MUJINCLIENT_API void ComputeMatrixFromTransform(Real matrix[12], const Transform
     [                       -sin(y)*cos(x),         sin(x),                         cos(x)*cos(y)]
 
  */
-MUJINCLIENT_API void ComputeZXYFromMatrix(Real ZXY[3], const Real matrix[12]);
+MUJINWEBSTACKCLIENT_API void ComputeZXYFromMatrix(Real ZXY[3], const Real matrix[12]);
 
-MUJINCLIENT_API void ComputeZXYFromTransform(Real ZXY[3], const Transform &transform);
+MUJINWEBSTACKCLIENT_API void ComputeZXYFromTransform(Real ZXY[3], const Transform &transform);
 
-MUJINCLIENT_API void SerializeEnvironmentStateToJSON(const EnvironmentState& envstate, std::ostream& os);
+MUJINWEBSTACKCLIENT_API void SerializeEnvironmentStateToJSON(const EnvironmentState& envstate, std::ostream& os);
 
 
-} // namespace mujinclient
+} // namespace mujinwebstackclient
 
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MAJOR>=0&&MUJINCLIENT_VERSION_MAJOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_MINOR>=0&&MUJINCLIENT_VERSION_MINOR<=255);
-BOOST_STATIC_ASSERT(MUJINCLIENT_VERSION_PATCH>=0&&MUJINCLIENT_VERSION_PATCH<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MAJOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MAJOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_MINOR>=0&&MUJINWEBSTACKCLIENT_VERSION_MINOR<=255);
+BOOST_STATIC_ASSERT(MUJINWEBSTACKCLIENT_VERSION_PATCH>=0&&MUJINWEBSTACKCLIENT_VERSION_PATCH<=255);
 
 #endif

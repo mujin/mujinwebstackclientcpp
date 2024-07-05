@@ -11,27 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/** \file controllerclientimpl.h
-    \brief  Private header file implementing the ControllerClient interface
+/** \file webstackclientimpl.h
+    \brief  Private header file implementing the WebstackClient interface
  */
-#ifndef MUJIN_CONTROLLERCLIENT_IMPL_H
-#define MUJIN_CONTROLLERCLIENT_IMPL_H
+#ifndef MUJIN_WEBSTACKCLIENT_IMPL_H
+#define MUJIN_WEBSTACKCLIENT_IMPL_H
 
-#include <mujincontrollerclient/mujincontrollerclient.h>
+#include <mujinwebstackclient/mujinwebstackclient.h>
 
 #include <boost/enable_shared_from_this.hpp>
 
-namespace mujinclient {
+namespace mujinwebstackclient {
 
-class ControllerClientImpl : public ControllerClient, public boost::enable_shared_from_this<ControllerClientImpl>
+class WebstackClientImpl : public WebstackClient, public boost::enable_shared_from_this<WebstackClientImpl>
 {
 public:
-    ControllerClientImpl(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout);
-    virtual ~ControllerClientImpl();
+    WebstackClientImpl(const std::string& usernamepassword, const std::string& baseuri, const std::string& proxyserverport, const std::string& proxyuserpw, int options, double timeout);
+    virtual ~WebstackClientImpl();
 
     const std::string& GetUserName() const override;
     const std::string& GetBaseURI() const override;
-    const ControllerClientInfo& GetClientInfo() const override;
+    const WebstackClientInfo& GetClientInfo() const override;
 
     std::string GetURIWithUsernamePassword() const override
     {
@@ -284,7 +284,7 @@ protected:
     std::stringstream _buffer;
     std::string _baseuri, _baseapiuri, _basewebdavuri, _uri, _username;
     std::string _fulluri; ///< full connection URI with username and password. http://username@password:path
-    ControllerClientInfo _clientInfo;
+    WebstackClientInfo _clientInfo;
 
     curl_slist *_httpheadersjson;
     curl_slist *_httpheadersstl;
@@ -301,8 +301,8 @@ protected:
     rapidjson::StringBuffer _rRequestStringBufferCache; ///< cache for request string, protected by _mutex
 };
 
-typedef boost::shared_ptr<ControllerClientImpl> ControllerClientImplPtr;
+typedef boost::shared_ptr<WebstackClientImpl> WebstackClientImplPtr;
 
-} // end namespace mujinclient
+} // end namespace mujinwebstackclient
 
 #endif

@@ -14,11 +14,11 @@
 /** \file common.h
     \brief  Private common definitions for mujin controller client.
  */
-#ifndef MUJIN_CONTROLLERCLIENT_COMMON_H
-#define MUJIN_CONTROLLERCLIENT_COMMON_H
+#ifndef MUJIN_WEBSTACKCLIENT_COMMON_H
+#define MUJIN_WEBSTACKCLIENT_COMMON_H
 
 #define WIN32_LEAN_AND_MEAN
-#include <mujincontrollerclient/mujincontrollerclient.h>
+#include <mujinwebstackclient/mujinwebstackclient.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/lexical_cast.hpp>
@@ -36,7 +36,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
-#undef GetUserName // classes with ControllerClient::GetUserName
+#undef GetUserName // classes with WebstackClient::GetUserName
 
 #include <boost/typeof/std/string.hpp>
 #include <boost/typeof/std/vector.hpp>
@@ -186,7 +186,7 @@ inline static unsigned long long GetNanoPerformanceTime()
 #endif
 #endif
 
-#define GETCONTROLLERIMPL() ControllerClientImplPtr controller = boost::dynamic_pointer_cast<ControllerClientImpl>(GetController());
+#define GETCONTROLLERIMPL() WebstackClientImplPtr controller = boost::dynamic_pointer_cast<WebstackClientImpl>(GetController());
 #define CHECKCURLCODE(code, msg) if (code != CURLE_OK) { \
         throw MujinException(boost::str(boost::format("[%s:%d] curl function %s with error '%s': %s")%(__PRETTY_FUNCTION__)%(__LINE__)%(msg)%curl_easy_strerror(code)%_errormessage), MEC_HTTPClient); \
 }
@@ -207,11 +207,7 @@ inline static unsigned long long GetNanoPerformanceTime()
 
 BOOST_STATIC_ASSERT(sizeof(unsigned short) == 2); // need this for utf-16 reading
 
-namespace mujinclient {
-
-class BinPickingTaskZmqResource;
-typedef boost::shared_ptr<BinPickingTaskZmqResource> BinPickingTaskZmqResourcePtr;
-typedef boost::weak_ptr<BinPickingTaskZmqResource> BinPickingTaskZmqResourceWeakPtr;
+namespace mujinwebstackclient {
 
 class FileHandler
 {
@@ -361,6 +357,6 @@ const char s_filesep = '/';
 const wchar_t s_wfilesep = L'/';
 #endif
 
-} // end namespace mujinclient
+} // end namespace mujinwebstackclient
 
 #endif

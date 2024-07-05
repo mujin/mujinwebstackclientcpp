@@ -85,8 +85,8 @@
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "C:\\mujin\\knowledge3dp\\3rdparty\\controllerclientcpp\\msvc_binaries\\amd64\\vcXX/lib/engines"
-#define OPENSSLDIR "C:\\mujin\\knowledge3dp\\3rdparty\\controllerclientcpp\\msvc_binaries\\amd64\\vcXX/ssl"
+#define ENGINESDIR "C:\\mujin\\knowledge3dp\\3rdparty\\webstackclientcpp\\msvc_binaries\\amd64\\vcXX/lib/engines"
+#define OPENSSLDIR "C:\\mujin\\knowledge3dp\\3rdparty\\webstackclientcpp\\msvc_binaries\\amd64\\vcXX/ssl"
 #endif
 #endif
 

@@ -1,32 +1,32 @@
 // -*- coding: utf-8 -*-
-#include <mujincontrollerclient/mujincontrollerclient.h>
+#include <mujinwebstackclient/mujinwebstackclient.h>
 
 #include <iostream>
 
-using namespace mujinclient;
+using namespace mujinwebstackclient;
 
 int main(int argc, char ** argv)
 {
     try {
-        ControllerClientPtr controller;
+        WebstackClientPtr controller;
         if( argc >= 5 ) {
-            controller = CreateControllerClient(argv[1], argv[2], argv[3], argv[4]);
+            controller = CreateWebstackClient(argv[1], argv[2], argv[3], argv[4]);
         }
         if( argc == 4 ) {
-            controller = CreateControllerClient(argv[1], argv[2], argv[3]);
+            controller = CreateWebstackClient(argv[1], argv[2], argv[3]);
         }
         else if( argc == 3 ) {
-            controller = CreateControllerClient(argv[1], argv[2]);
+            controller = CreateWebstackClient(argv[1], argv[2]);
         }
         else {
-            controller = CreateControllerClient(argv[1]);
+            controller = CreateWebstackClient(argv[1]);
         }
         std::cout << "connected to controller v" << controller->GetVersion() << std::endl;
 
         //std::wstring sourcefilename_utf16 = L"F:\\dev\\densowave\\wincaps\\rc8test\\test0\\test0.WPJ";
-        std::string sourcefilename_utf8 = "../share/mujincontrollerclient/densowave_wincaps_data/vs060a3_test0/test0.WPJ";
+        std::string sourcefilename_utf8 = "../share/webstackclientcpp/densowave_wincaps_data/vs060a3_test0/test0.WPJ";
         std::wstring uri_utf16 = L"mujin:/testupload/test0.WPJ";
-        //std::string sourcefilename_utf16 = L"../share/mujincontrollerclient/densowave_wincaps_data/vs060a3_test0/test0.WPJ";
+        //std::string sourcefilename_utf16 = L"../share/webstackclientcpp/densowave_wincaps_data/vs060a3_test0/test0.WPJ";
         //std::string sourcefilename_utf8 = "F:\\dev\\densowave\\wincaps\\レイアウト評価\\レイアウト評価.WPJ";
         //std::wstring sourcefilename_utf16 = L"F:\\dev\\densowave\\wincaps\\\u30ec\u30a4\u30a2\u30a6\u30c8\u8a55\u4fa1\\\u30ec\u30a4\u30a2\u30a6\u30c8\u8a55\u4fa1.WPJ";
         //std::wstring uri_utf16 = L"mujin:/u30ec\u30a4\u30a2\u30a6\u30c8\u8a55\u4fa1.WPJ";
@@ -67,5 +67,5 @@ int main(int argc, char ** argv)
     catch(const MujinException& ex) {
         std::cout << "exception thrown: " << ex.message() << std::endl;
     }
-    ControllerClientDestroy();
+    WebstackClientDestroy();
 }

@@ -94,8 +94,8 @@ extern "C" {
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "c:\\mujin\\controllerclientcpp\\msvc_binaries\\amd64\\vc90/lib/engines"
-#define OPENSSLDIR "c:\\mujin\\controllerclientcpp\\msvc_binaries\\amd64\\vc90/ssl"
+#define ENGINESDIR "c:\\mujin\\webstackclientcpp\\msvc_binaries\\amd64\\vc90/lib/engines"
+#define OPENSSLDIR "c:\\mujin\\webstackclientcpp\\msvc_binaries\\amd64\\vc90/ssl"
 #endif
 #endif
 
