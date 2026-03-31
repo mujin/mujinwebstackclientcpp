@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.74.0 (2026-03-31)
+
+- Remove `lastInsideContainerStampMS` to follow upstream change
+
 ## 0.73.2 (2024-06-26)
 
 - Fix invalid JSON string construction.
